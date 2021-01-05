@@ -1,5 +1,6 @@
-import * as int from "./int.js"
-import * as quit from "./quit.js"
+const BigInteger = require("big-integer");
+const int = require("./int.js");
+const quit = require("./quit.js");
 
 
 
@@ -65,12 +66,7 @@ _Float.prototype.decimalValue = function () {
 
 
 _Float.prototype.bigIntValue = function () {
-    var _this = this;
-    //The bigint value of a float floored
-    var t1 = _this.a.bigIntValue();
-    var t2 = BigInt(3) ** _this.b.bigIntValue();
-    var t3 = BigInt(3) ** BigInt(PRECISION - 1);
-    return (t1 * t2) / t3;
+    return new BigInteger(Math.floor(this.decimalValue()));
 }
 
 _Float.prototype.neg = function () {
@@ -200,4 +196,4 @@ _Float.prototype.round = function () {
 }
 
 _Float.prototype.toJSON = _Float.prototype.decimalValue;
-export { _Float }
+Object.assign(exports,{_Float})

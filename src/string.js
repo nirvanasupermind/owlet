@@ -1,9 +1,9 @@
 /**
  * This module defines Ascii string
  */
-import * as int from "./int.js"
-import * as quit from "./quit.js"
-import * as dictionary from "./dictionary.js"
+const int = require("./int.js");
+const quit = require("./quit.js");
+const table = require("./table.js");
 
 //Here's a table of ascii characters
 var asciiTable = {
@@ -306,7 +306,7 @@ function fromCaret(a) {
 }
 
 function toASCII(str) {
-    var dict = new dictionary._Dictionary();
+    var dict = new table._Table();
     for (var i = 0; i < str.length; i++) {
         dict.set(new int._Int(i), new int._Int(parseFloat(inverseAsciiTable[str.charAt(i)])));
         // dict.set(new int._Int(-i - 1), new int._Int(parseFloat(inverseAsciiTable[str.charAt(str.length - i)])));
@@ -339,7 +339,7 @@ _String.prototype.toString = function () {
     return fromASCII(this.value);
 }
 
-//Need JSON for dictionary addresses
+//Need JSON for table addresses
 _String.prototype.toJSON = _String.prototype.toString;
 
 //character length
@@ -358,7 +358,7 @@ _String.prototype.charAt = function (i) {
     }
 
     var v = Object.getOwnPropertyNames(this.value.hashes).map((e) => this.value.hashes[e]);
-    var result = new dictionary._Dictionary();
+    var result = new table._Table();
     if (i.compareTo(0) < 0) {
         result.set(new int._Int(0), v[this.length().add(i).intValue()]);
     } else {
@@ -369,7 +369,7 @@ _String.prototype.charAt = function (i) {
 }
 
 _String.prototype.concat = function (that) {
-    var result = new dictionary._Dictionary();
+    var result = new table._Table();
     for (var i = 0; i < this.length(); i++) {
         result.set(new int._Int(i), this.charAt(new int._Int(i)).value.hashes[0]);
     }
@@ -404,7 +404,7 @@ _String.prototype.substr = function (a, b) {
 
 
 
-    var result = new dictionary._Dictionary();
+    var result = new table._Table();
     for (var i = a.intValue(); i < b.intValue(); i++) {
         result.set(new int._Int(i), this.charAt(new int._Int(i)).value.hashes[0]);
     }
@@ -415,4 +415,4 @@ _String.prototype.substr = function (a, b) {
 }
 
 
-export { _String };
+Object.assign(exports,{_String});

@@ -1,5 +1,6 @@
-import * as trit from "./trit.js"
-import * as quit from "./quit.js"
+const BigInteger = require("big-integer");
+const trit = require("./trit.js");
+const quit = require("./quit.js");
 
 /**
   * This module defines an integer, stored as a string in balanced ternary.
@@ -22,7 +23,7 @@ function _Int(s) {
         return;
     } else if (typeof s === "number") {
         s = _Int.convertToBT(s);
-    } else if (typeof s === "bigint") {
+    } else if (s instanceof BigInteger) {
         s = _Int.bigToBT(s);
     } else if (Array.isArray(s)) {
         s = s.join("");
@@ -63,11 +64,7 @@ _Int.convertToBT = function (v) {
 
 
 _Int.bigToBT = function (v) {
-    if (v === 0) {
-        return "0";
-    }
-    var R = (n, d = (n % BigInt(3) + BigInt(3)) % BigInt(3)) => n ? R((n - d) / BigInt(3) + BigInt(d > BigInt(1))).toString() + '01N'[Number(d)] : '';
-    return R(v);
+   return new BigInteger(_Int.convertToBT(v));
 }
 
 
@@ -473,15 +470,15 @@ _Int.prototype.toString = function () {
 
 
 
-BigInt.prototype.toJSON = function() {
+BigInteger.prototype.toJSON = function () {
     return this.toString(10);
 }
 
 
-_Int.prototype.toJSON = function() {
+_Int.prototype.toJSON = function () {
     return this.bigIntValue().toString(10);
 }
 
 
-export { _Int }
+Object.assign(exports, { _Int })
 

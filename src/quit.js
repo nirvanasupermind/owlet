@@ -17,14 +17,14 @@ function quit(msg) {
     }
 }
 
-//Assertion
+// //Assertion
 
-function assert(cond) {
-    if(!cond) {
-        throw new OwletError("AssertionError");
-    }
-}
+// function assert(cond) {
+//     if(!cond) {
+//         throw new OwletError("AssertionError");
+//     }
+// }
 
 
 
-export { quit, assert};
+Object.assign(exports, { quit });

@@ -1,4 +1,4 @@
-import * as quit from "./quit.js"
+const quit = require('./quit.js')
 //Define the pretty printer
 
 Object.prototype._toString = function () {
@@ -37,7 +37,7 @@ function _Trit(ch) {
                 this.ch = "N";
                 break;
             default:
-                console.log("This is a string case:"+ch);
+                console.log("This is a string case:" + ch);
                 quit.quit("Invalid trit: " + ch);
         }
     }
@@ -148,10 +148,7 @@ _Trit.prototype.intValue = function () {
     return parseFloat(this.ch);
 }
 
-BigInt.prototype.toJSON = function() {
-    return this.toString(10);
-}
 
-export { _Trit }
+Object.assign(exports, { _Trit })
 
 //This code is contributed by JohnSully 

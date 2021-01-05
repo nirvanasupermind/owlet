@@ -1,17 +1,17 @@
-import * as nullType from "./null.js"
-import * as quit from "./quit.js"
+const nullType = require("./null.js");
+const quit = require("./quit.js");
 /**
  * This module defines a dictionary (hash table).
  * Credits to Jerry Ejonavi for making part of the code.
  */
 
-function _Dictionary() {
+function _Table() {
     this.hashes = {};
 }
 
 
-_Dictionary.prototype = {
-    constructor: _Dictionary,
+_Table.prototype = {
+    constructor: _Table,
     
     //Setts a key-value pair
     set: function( key, value ) {
@@ -28,11 +28,11 @@ _Dictionary.prototype = {
     }
 };
 
-_Dictionary.prototype.toString = function() {
+_Table.prototype.toString = function() {
   return JSON.stringify(this.hashes);
 }
 
 
 
 
-export { _Dictionary }
+Object.assign(exports,{_Table})
