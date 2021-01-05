@@ -1,0 +1,6 @@
+local d = 0.0/0.0;
+System.print(d);
+namespace {
+
+}
+
