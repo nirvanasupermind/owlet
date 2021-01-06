@@ -1,5 +1,5 @@
 /**
- * This module defines Ascii string
+ * This module defines ascii strings
  */
 const int = require("./int.js");
 const quit = require("./quit.js");
@@ -347,39 +347,29 @@ _String.prototype.length = function () {
     return new int._Int(Object.getOwnPropertyNames(this.value.hashes).length);
 }
 
-//charAt, plus python negative index
+/**
+ * Returns the character at zero-based index
+ */
 _String.prototype.charAt = function (i) {
     i = new int._Int(i);
-
-    if (i.compareTo(-this.length()) < 0) {
-        return new _String();
-    } else if (i.compareTo(this.length()) > 0) {
-        return new _String();
-    }
-
-    var v = Object.getOwnPropertyNames(this.value.hashes).map((e) => this.value.hashes[e]);
-    var result = new table._Table();
-    if (i.compareTo(0) < 0) {
-        result.set(new int._Int(0), v[this.length().add(i).intValue()]);
-    } else {
-        result.set(new int._Int(0), v[i.intValue()]);
-    }
-
-    return new _String(result);
+    return new _String(asciiTable[this.value.hashes[i]]);
 }
+
+/**
+ * Returns a string that contains the concatenation
+ */
 
 _String.prototype.concat = function (that) {
     var result = new table._Table();
-    for (var i = 0; i < this.length(); i++) {
-        result.set(new int._Int(i), this.charAt(new int._Int(i)).value.hashes[0]);
+    for (var i = int._Int.ZERO; i < this.length(); i = i.add(1)) {
+        result.set(i, this.value.get(i));
     }
 
-    for (var j = 0; j < that.length(); j++) {
-        result.set(new int._Int(j).add(this.length()), that.charAt(new int._Int(j)).value.hashes[0]);
+    for (var j = int._Int.ZERO; j < that.length(); j = j.add(1)) {
+        result.set(j.add(this.length()),that.value.get(j));
     }
 
     return new _String(result);
-
 
 
 }
@@ -413,6 +403,14 @@ _String.prototype.substr = function (a, b) {
 
 
 }
+
+/**
+ * Locale comparison
+ */
+_String.prototype.compareTo = function(that) {
+    return this.toString().localeCompare(that.toString());
+}
+
 
 
 module.exports = {_String};

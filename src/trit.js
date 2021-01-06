@@ -1,11 +1,14 @@
 const quit = require('./quit.js')
-//Define the pretty printer
+const BigInteger = require("big-integer")
 
-Object.prototype._toString = function () {
-    return this.toString();
-};
-
-
+//util
+Object.prototype.clone = function () {
+    var instanceOfBlah = this;
+    var Blah = this.constructor;
+    const clone = Object.assign({}, instanceOfBlah);
+    Object.setPrototypeOf(clone, Blah.prototype);
+    return clone;
+}
 
 /**
   * This module defines a trit (ternary digit), which can be {-1,0,1}.
@@ -149,6 +152,14 @@ _Trit.prototype.intValue = function () {
 }
 
 
-module.exports =  { _Trit }
+_Trit.prototype.bigIntValue = function () {
+    if (this.ch === "N") {
+        return BigInteger(-1);
+    }
+
+    return BigInteger(parseFloat(this.ch));
+}
+
+module.exports = { _Trit }
 
 //This code is contributed by JohnSully 

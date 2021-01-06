@@ -23,8 +23,6 @@ function _Int(s) {
         return;
     } else if (typeof s === "number") {
         s = _Int.convertToBT(s);
-    } else if (s instanceof BigInteger) {
-        s = _Int.bigToBT(s);
     } else if (Array.isArray(s)) {
         s = s.join("");
     }
@@ -47,12 +45,20 @@ _Int.MINUS_ONE = new _Int("N");
 _Int.ZERO = new _Int("0");
 _Int.ONE = new _Int("1");
 
+/**
+ * Performs signed modulo 3
+ */
+
 _Int.mod3 = function (v) {
     if (v > 0)
         return v % 3;
     v = v % 3;
     return (v + 3) % 3;
 }
+
+/**
+ * Converts integer to balanced ternary
+ */
 
 _Int.convertToBT = function (v) {
     if (v === 0) {
@@ -62,11 +68,9 @@ _Int.convertToBT = function (v) {
     return R(v);
 }
 
-
-_Int.bigToBT = function (v) {
-   return new BigInteger(_Int.convertToBT(v));
-}
-
+/**
+ * Converts integer to native number
+ */
 
 _Int.prototype.intValue = function () {
     var result = 0;
@@ -78,29 +82,42 @@ _Int.prototype.intValue = function () {
     return result;
 }
 
-
+/**
+ * Converts integer to BigInteger: this is needed to print the number accurately.
+ */
 _Int.prototype.bigIntValue = function () {
-    var result = BigInteger(0);
+    // if(this.value[0] === "N") {
+    // return this.neg().bigIntValue();
+    // }
+    var result = new BigInteger(0);
     for (var i = 0; i < this.length(); i++) {
         var j = this.length() - i - 1;
-        var t1 = new trit._Trit(this.value.charAt(i)).intValue();
-        result += BigInteger(t1) * BigInteger(3) ** BigInteger(j);
+        var t1 = new trit._Trit(this.value.charAt(i)).bigIntValue();
+        result += new BigInteger(t1).times(new BigInteger(3)).pow(new BigInteger(j));
     }
 
     return result;
 }
 
-//Number of trits in an int
+/**
+Number of trits in an int
+*/
 _Int.prototype.length = function () {
     return this.value.length;
 }
 
-//UTIL exponet by 3
+/**
+ * Util exponent by 3
+ */
 _Int.exp = function (n) {
     return new _Int("1" + "0".repeat(n));
 }
 
-//Lengthens two arguments to the same length
+/** 
+ * Lengthens two arguments to the same length
+ * @param {*} a
+ * @param {*} b
+*/
 _Int.lengthen = function (a, b) {
     a = a.value;
     b = b.value;
@@ -116,7 +133,9 @@ _Int.lengthen = function (a, b) {
     return { a: a, b: b };
 }
 
-//Bitwise NOT or Negation
+/**
+ * Bitwise NOT or Negation
+*/
 _Int.prototype.neg = function () {
     var result = "";
     for (var i = 0; i < this.length(); i++) {
@@ -125,7 +144,9 @@ _Int.prototype.neg = function () {
     return new _Int(result);
 }
 
-//Bitwise AND
+/**
+ * Bitwise AND
+ */
 _Int.prototype.and = function (that) {
     that = new _Int(that);
     var a = _Int.lengthen(this, that).a;
@@ -138,7 +159,9 @@ _Int.prototype.and = function (that) {
     return new _Int(result);
 }
 
-//Bitwise OR
+/**
+ * Bitwise OR
+ */
 _Int.prototype.or = function (that) {
     that = new _Int(that);
 
@@ -153,7 +176,9 @@ _Int.prototype.or = function (that) {
 }
 
 
-//Bitwise XOR
+/**
+ * Bitwise XOR
+ */
 _Int.prototype.xor = function (that) {
     that = new _Int(that);
 
@@ -167,6 +192,9 @@ _Int.prototype.xor = function (that) {
     return new _Int(result);
 }
 
+/**
+ * Half-add circuit
+ */
 _Int.addDigits_1 = function (a, b) {
 
     var sum = "";
@@ -188,6 +216,9 @@ _Int.addDigits_1 = function (a, b) {
     return sum;
 }
 
+/**
+ * Full add circuit
+ */
 _Int.addDigits = function (a, b, carry) {
     var sum1 = _Int.addDigits_1(a, b);
     var sum2 = _Int.addDigits_1(sum1.charAt(sum1.length - 1), carry);
@@ -199,9 +230,12 @@ _Int.addDigits = function (a, b, carry) {
     return sum1.charAt(0) + "";
 }
 
-//Addition
+/**
+ * Adds two ints
+ */
 
 _Int.prototype.add = function (that) {
+    //Cast
     that = new _Int(that);
     var a = this.value;
     var b = that.value;
@@ -220,8 +254,10 @@ _Int.prototype.add = function (that) {
     var sum = "";
     for (var i = 0; i < a.length; i++) {
         var place = a.length - i - 1;
+        //compute the digit
         var digisum = _Int.addDigits(a.charAt(place), b.charAt(place), carry);
         if (digisum.length != 1)
+            //compute the carry
             carry = digisum.charAt(0);
         else
             carry = '0';
@@ -233,16 +269,19 @@ _Int.prototype.add = function (that) {
 }
 
 
-//subtraction
+/**
+ * Subtracts two ints
+ */
 _Int.prototype.sub = function (that) {
     that = new _Int(that);
 
     return this.add(that.neg());
 }
 
-
+/**
+ * Multiply by a single trit
+ */
 _Int.prototype.multiplyTrit = function (that) {
-    //Multiply by a single trit
     if (that.ch === "N") {
         return this.neg();
     } else if (that.ch === "0") {
@@ -252,6 +291,9 @@ _Int.prototype.multiplyTrit = function (that) {
     }
 }
 
+/**
+ * Ternary lshift with native number
+ */
 _Int.prototype.lshift = function (x) {
     var result = this.value;
     for (var i = 0; i < x; i++) {
@@ -259,18 +301,21 @@ _Int.prototype.lshift = function (x) {
     }
     return new _Int(result);
 }
+
+
+
 _Int.prototype.shorter = function (i) {
     return new _Int(this.value.substr(0, i));
-
 }
 
-//multiplication
+
+/**
+ * Product of two ints
+*/
 _Int.prototype.mul = function (that) {
     that = new _Int(that);
 
 
-
-    //Multiply of two ints
     var result = new _Int("0");
     for (var i = 0; i < that.length(); i++) {
         var j = that.length() - i - 1;
@@ -282,81 +327,38 @@ _Int.prototype.mul = function (that) {
 }
 
 
-//division (manual method)
-/*
+
+
+//division function
+function divide(a, b) {
+    var result = new _Int("0");
+    var a2 = a.clone();
+    //Manual subtraction
+    while (a2.compareTo(new _Int(0)) > b) {
+        a2 = a2.sub(b);
+        result = result.add(1);
+    }
+
+    return [result, a2];
+}
+
+
+/**
+ * Quotient of two ints
+ */
+
 _Int.prototype.div = function (that) {
-    that = new _Int(that);
-
-    var one = new _Int("1");
-    var zero = new _Int("0");
-    var div = new _Int("0");
-    var temp = this;
-
-    if (that.compareTo(zero) === -1) {
-        that = that.neg();
-        flipflag = 1;
-    }
-
-
-    while (temp.compareTo(zero) >= 0) {
-        temp = temp.sub(that);
-        div = div.add(one);
-    }
-
-    return div;
-
+    return divide(this,that)[0];
 }
+
+
+/**
+ * modulo (remainder)
 */
-
-//modulo (remainder)
 _Int.prototype.mod = function (that) {
-   return divide(this,that)[1];
+    return divide(this, that)[1];
 
 }
-
-_Int.prototype.isEven = function () {
-    var a = this;
-    while (a.value.length > 1) {
-        a = a.value.split("").reduce((a, b) => new _Int(a).add(new _Int(b)));
-    }
-
-    if (a.value === "0")
-        return true;
-    if (a.value === "")
-        return true;
-
-    return false;
-}
-
-_Int.prototype.isOdd = function () {
-    return !this.isEven();
-}
-
-_Int.mod2 = function (a) {
-    if (a.isEven()) {
-        return new _Int("0");
-    } else {
-        return new _Int("1");
-    }
-}
-
-
-//division, but more efficient for small numbers
-function divide(a, b, q = new _Int(0)) {
-    if (a.compareTo(b) === -1) {
-        return [q, a];
-    }
-    return divide(a.sub(b), b, q.add(1));
-}
-
-
-_Int.prototype.div_efficient = function (that) {
-    that = new _Int(that);
-    return divide(this, that)[0];
-}
-
-_Int.prototype.div = _Int.prototype.div_efficient;
-
 //scrapped long division (can't translate to ternary)
 /*
 //https://www.geeksforgeeks.org/divide-large-number-represented-string/
@@ -437,10 +439,15 @@ _Int.prototype.div = _Int.prototype.div_efficient;
 
 
 
+/**
+ * Equality
+ */
 _Int.prototype.equals = function (that) {
     return this.value === (that.value);
 }
-
+/**
+ * Spaceship operator
+ */
 _Int.prototype.compareTo = function (that) {
     that = new _Int(that);
     if (this.intValue() > that.intValue())
@@ -450,11 +457,13 @@ _Int.prototype.compareTo = function (that) {
     return -1;
 }
 
+
+
 _Int.prototype.toString = function () {
     return this.bigIntValue().toString();
 }
 
-
+//JSON formatting
 
 BigInteger.prototype.toJSON = function () {
     return this.toString(10);
@@ -466,5 +475,6 @@ _Int.prototype.toJSON = function () {
 }
 
 
-module.exports =  { _Int }
+//Export
+module.exports = { _Int }
 
