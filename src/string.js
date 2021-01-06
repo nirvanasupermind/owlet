@@ -415,4 +415,4 @@ _String.prototype.substr = function (a, b) {
 }
 
 
-Object.assign(exports,{_String});
+module.exports = {_String};

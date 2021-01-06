@@ -14,4 +14,4 @@ const quit = require("./quit.js");
 
 
 
-Object.assign(exports, { trit, int, float, table, string, nullType })
+module.exports = { BigInteger, trit, int, float, table, string, nullType }

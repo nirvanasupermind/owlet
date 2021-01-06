@@ -80,8 +80,8 @@ _Float.prototype.add = function (that) {
     var _this = this;
     var _that = that;
 
-    while(_this.b.compareTo(_that.b) > 0) {
-        _this.a = new int._Int(_this.a.value+"0");
+    while (_this.b.compareTo(_that.b) > 0) {
+        _this.a = new int._Int(_this.a.value + "0");
         _this.b = _this.b.sub(1);
     }
 
@@ -196,4 +196,4 @@ _Float.prototype.round = function () {
 }
 
 _Float.prototype.toJSON = _Float.prototype.decimalValue;
-Object.assign(exports,{_Float})
+module.exports = { _Float }

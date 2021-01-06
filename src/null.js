@@ -8,4 +8,4 @@ _Null.prototype.toJSON = function() {
     return null;
 }
 
-Object.assign(exports,{_Null})
+module.exports = { _Null }

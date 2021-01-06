@@ -80,11 +80,11 @@ _Int.prototype.intValue = function () {
 
 
 _Int.prototype.bigIntValue = function () {
-    var result = BigInt(0);
+    var result = BigInteger(0);
     for (var i = 0; i < this.length(); i++) {
         var j = this.length() - i - 1;
         var t1 = new trit._Trit(this.value.charAt(i)).intValue();
-        result += BigInt(t1) * BigInt(3) ** BigInt(j);
+        result += BigInteger(t1) * BigInteger(3) ** BigInteger(j);
     }
 
     return result;
@@ -283,6 +283,7 @@ _Int.prototype.mul = function (that) {
 
 
 //division (manual method)
+/*
 _Int.prototype.div = function (that) {
     that = new _Int(that);
 
@@ -305,28 +306,11 @@ _Int.prototype.div = function (that) {
     return div;
 
 }
+*/
 
 //modulo (remainder)
 _Int.prototype.mod = function (that) {
-    that = new _Int(that);
-
-    var one = new _Int("1");
-    var zero = new _Int("0");
-    var div = new _Int("0");
-    var temp = this;
-
-    if (that.compareTo(zero) === -1) {
-        that = that.neg();
-        flipflag = 1;
-    }
-
-
-    while (temp.compareTo(zero) >= 0) {
-        temp = temp.sub(that);
-        div = div.add(one);
-    }
-
-    return temp.neg();
+   return divide(this,that)[1];
 
 }
 
@@ -368,8 +352,10 @@ function divide(a, b, q = new _Int(0)) {
 
 _Int.prototype.div_efficient = function (that) {
     that = new _Int(that);
-    return divide(this, that);
+    return divide(this, that)[0];
 }
+
+_Int.prototype.div = _Int.prototype.div_efficient;
 
 //scrapped long division (can't translate to ternary)
 /*
@@ -480,5 +466,5 @@ _Int.prototype.toJSON = function () {
 }
 
 
-Object.assign(exports, { _Int })
+module.exports =  { _Int }
 

@@ -149,6 +149,6 @@ _Trit.prototype.intValue = function () {
 }
 
 
-Object.assign(exports, { _Trit })
+module.exports =  { _Trit }
 
 //This code is contributed by JohnSully 

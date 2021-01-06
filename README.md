@@ -3,8 +3,5 @@ An experimental balanced ternary architecture for ternary software development w
 
 owlet has a dependancy on [peterolson/BigInteger.js](https://github.com/peterolson/BigInteger.js/) to print numbers, with no additional dependencies.
 
-
-
-
 # Status
 This is work in progress.

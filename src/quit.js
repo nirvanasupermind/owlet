@@ -27,4 +27,4 @@ function quit(msg) {
 
 
 
-Object.assign(exports, { quit });
+module.exports =  { quit };
