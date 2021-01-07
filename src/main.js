@@ -3,9 +3,9 @@ const modules = require("./modules.js");
 var I = (e) => { return new modules.int._Int(modules.int._Int.convertToBT(e)) };
 var S = (e) => { return new modules.string._String(e.toString()) };
 
-// var num = new modules.rat._Rat(I(4),I(6));
-// console.log(num);
-console.log((I(65).mod(I(30)).bigIntValue()));
+var a = new modules.float._Float(0.6);
+// var num = new modules.rat._Rat(Math.PI);
+console.log(a.decimalValue());
 // const modules = require("./modules.js");
 // const Owlet = require("./owlet.js");
 // const Environment = require("./environment.js")

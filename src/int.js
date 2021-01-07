@@ -3,8 +3,8 @@ const trit = require("./trit.js");
 const quit = require("./quit.js");
 
 /**
-  * This module defines an integer, stored as a string in balanced ternary.
-  * Credits to RosettaCode and Justin Fay for making part of the code
+  * This module defines an arbitrary-precision integer, stored as a string in balanced ternary.
+  * Credits to RosettaCode and WallyWest for making part of the code
  */
 
 
@@ -12,7 +12,7 @@ function _Int(s) {
     if (typeof s === "string") {
         for (var i = 0; i < s.length; i++) {
             if (!"01N".includes(s.charAt(i))) {
-                throw new Error("Invalid trits provided to construct an int");
+                throw new Error("Invalid trits provided to construct an int: " + JSON.stringify(s));
             }
         }
     }
@@ -26,7 +26,8 @@ function _Int(s) {
     } else if (Array.isArray(s)) {
         s = s.join("");
     }
-    s = s.toString();
+
+    s = (s || "").toString();
 
 
     var i = 0;
@@ -37,6 +38,7 @@ function _Int(s) {
     if (s === "") {
         s = "0";
     }
+
     this.value = s;
 
 }
@@ -64,19 +66,46 @@ _Int.convertToBT = function (v) {
     if (v === 0) {
         return "0";
     }
-    var R = (n, d = (n % 3 + 3) % 3) => n ? R((n - d) / 3 + (d > 1)) + '01N'[d] : '';
-    return R(v);
+    var t = a => { v = ""; if (0 == a) v = "0"; else for (a = (N = 0 > a) ? -a : a; a;)v = "01N"[r = (a % 3 + 3) % 3] + v, 2 == r && ++a, a = a / 3 | 0; return v }
+    var t2 = a => { 
+        if(a < 0) {
+            return t(a).split("").map((e) => ({'0':'0','1':'N','N':'1'})[e]).join("")
+        } else {
+            return t(a);
+        }
+    }
+    return t2(v);
 }
 
+/**
+ * Converts arbitrary-precision integer to balanced ternary
+ */
+
+_Int.bigToBT = function (n) {
+    var output = "";
+    while (n > 0) {
+
+        n = new BigInteger(n);
+        var rem = n.remainder(3);
+        n = n.divide(3);
+        if (rem == 2) {
+            rem = -1;
+            n++;
+        }
+        output = (rem == 0 ? '0' :
+            (rem == 1) ? '1' : 'N') + output;
+    }
+    return output;
+}
 /**
  * Converts integer to native number
  */
 
-_Int.prototype.intValue = function () {
+_Int.prototype.decimalValue = function () {
     var result = 0;
     for (var i = 0; i < this.length(); i++) {
         var j = this.length() - i - 1;
-        result += new trit._Trit(this.value.charAt(i)).intValue() * Math.pow(3, j);
+        result += new trit._Trit(this.value.charAt(i)).decimalValue() * Math.pow(3, j);
     }
 
     return result;
@@ -93,7 +122,7 @@ _Int.prototype.bigIntValue = function () {
     for (var i = 0; i < this.length(); i++) {
         var j = this.length() - i - 1;
         var t1 = new trit._Trit(this.value.charAt(i)).bigIntValue();
-        result += new BigInteger(t1).times(new BigInteger(3)).pow(new BigInteger(j));
+        result += new BigInteger(t1).times(new BigInteger(3).pow(new BigInteger(j)));
     }
 
     return result;
@@ -134,7 +163,7 @@ _Int.lengthen = function (a, b) {
 }
 
 /**
- * Bitwise NOT or Negation
+ * Tritwise NOT or Negation
 */
 _Int.prototype.neg = function () {
     var result = "";
@@ -145,7 +174,7 @@ _Int.prototype.neg = function () {
 }
 
 /**
- * Bitwise AND
+ * Tritwise AND
  */
 _Int.prototype.and = function (that) {
     that = new _Int(that);
@@ -160,7 +189,7 @@ _Int.prototype.and = function (that) {
 }
 
 /**
- * Bitwise OR
+ * Tritwise OR
  */
 _Int.prototype.or = function (that) {
     that = new _Int(that);
@@ -177,7 +206,7 @@ _Int.prototype.or = function (that) {
 
 
 /**
- * Bitwise XOR
+ * Tritwise XOR
  */
 _Int.prototype.xor = function (that) {
     that = new _Int(that);
@@ -331,10 +360,10 @@ _Int.prototype.mul = function (that) {
 
 //division function
 function divide(a, b) {
-    var result = new _Int("0");
+    var result = new _Int("N");
     var a2 = a.clone();
     //Manual subtraction
-    while (a2.compareTo(new _Int(0)) > b) {
+    while (a2.compareTo(new _Int(0)) >= 0) {
         a2 = a2.sub(b);
         result = result.add(1);
     }
@@ -348,95 +377,30 @@ function divide(a, b) {
  */
 
 _Int.prototype.div = function (that) {
-    return divide(this,that)[0];
+    return divide(this, that)[0];
 }
+
+
 
 
 /**
  * modulo (remainder)
 */
 _Int.prototype.mod = function (that) {
-    return divide(this, that)[1];
+    return that.add(divide(this, that)[1]);
 
 }
-//scrapped long division (can't translate to ternary)
-/*
-//https://www.geeksforgeeks.org/divide-large-number-represented-string/
-// A function to perform division of large numbers 
-    static string longDivision(string number, int divisor) 
-    { 
-        // As result can be very large store it in string 
-        string ans = ""; 
-  
-        // Find prefix of number that is larger 
-        // than divisor. 
-        int idx = 0; 
-        int temp = (int)(number[idx] - '0'); 
-        while (temp < divisor) { 
-            temp = temp * 10 + (int)(number[idx + 1] - '0'); 
-            idx++; 
-        } 
-        ++idx; 
-  
-        // Repeatedly divide divisor with temp. After 
-        // every division, update temp to include one 
-        // more digit. 
-        while (number.Length > idx) { 
-            // Store result in answer i.e. temp / divisor 
-            ans += (char)(temp / divisor + '0'); 
-  
-            // Take next digit of number 
-            temp = (temp % divisor) * 10 + (int)(number[idx] - '0'); 
-            idx++; 
-        } 
-        ans += (char)(temp / divisor + '0'); 
-  
-        // If divisor is greater than number 
-        if (ans.Length == 0) 
-            return "0"; 
-  
-        // else return ans 
-        return ans; 
-    } 
 
-*/
-// _Int.prototype.div = function (that) {
-//     that = new _Int(that);
-//         function divide(dd) { # the last position that divisor* val <  dd
-//             s, r = 0, 0
-//             for (var i = 0; i < 9; i++) {
-//                 tmp = s + divisor
-//                 if (tmp <= dd) {
-//                     s = tmp
-//                 }
-//                 else {
-//                     return str(i), str(dd-s)
-//                 }
-//             }
-//             return str(9), str(dd-s)
-//         }
+/**
+ * Absolute value
+ */
+_Int.prototype.abs = function () {
+    if (this.compareTo(_Int.ZERO) < 0) {
+        return this.neg();
+    }
 
-//         if dividend == 0:
-//             return 0
-//         sign = -1
-//         if (dividend >0 and divisor >0 ) or (dividend < 0 and divisor < 0):
-//             sign = 1
-//         dividend = abs(dividend)
-//         divisor = abs(divisor)
-//         if divisor > dividend:
-//             return 0
-//         ans, did, dr = [], str(dividend), str(divisor)
-//         n = len(dr)
-//         pre = did[:n-1]
-//         for i in range(n-1, len(did)):
-//             dd = pre+did[i]
-//             dd = int(dd)
-//             v, pre = divide(dd)
-//             ans.append(v)
-
-//         ans = int(''.join(ans))*sign
-// }
-
+    return this;
+}
 
 
 /**
@@ -445,14 +409,17 @@ _Int.prototype.mod = function (that) {
 _Int.prototype.equals = function (that) {
     return this.value === (that.value);
 }
+
 /**
- * Spaceship operator
+ * Performs a comparison between two numbers. 
+ * If the numbers are equal, it returns 0. If the first number is greater, it returns 1. 
+ * If the first number is lesser, it returns -1.
  */
 _Int.prototype.compareTo = function (that) {
     that = new _Int(that);
-    if (this.intValue() > that.intValue())
+    if (this.decimalValue() > that.decimalValue())
         return 1;
-    else if (this.intValue() === that.intValue())
+    else if (this.decimalValue() === that.decimalValue())
         return 0;
     return -1;
 }
@@ -472,6 +439,28 @@ BigInteger.prototype.toJSON = function () {
 
 _Int.prototype.toJSON = function () {
     return this.bigIntValue().toString(10);
+}
+
+/**
+ * Minimum
+ */
+_Int.min = function (a, b) {
+    if (a.compareTo(b) < 0) {
+        return a;
+    } else {
+        return b;
+    }
+}
+
+/**
+ * Maximum
+ */
+_Int.max = function (a, b) {
+    if (a.compareTo(b) > 0) {
+        return a;
+    } else {
+        return b;
+    }
 }
 
 

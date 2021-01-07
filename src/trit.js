@@ -143,7 +143,7 @@ _Trit.prototype.toString = function () {
     return this.ch;
 }
 
-_Trit.prototype.intValue = function () {
+_Trit.prototype.decimalValue = function () {
     if (this.ch === "N") {
         return -1;
     }

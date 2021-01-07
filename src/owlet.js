@@ -176,6 +176,7 @@ function falsey(exp) {
         new modules.trit._Trit("0"),
         new modules.trit._Trit("N"),
         new modules.string._String(new modules.table._Table()),
+        new modules.table._Table(),
         // new modules.float._Float(modules.int._Int.ZERO, modules.int._Int.ZERO),
         new modules.nullType._Null()
     ].map(JSON.stringify).indexOf(JSON.stringify(exp)) >= 0 || !exp;
