@@ -12,10 +12,18 @@ The language work in progress, the not fully designed and there are some tests.
 # How it Works
 The basic logic for the Owlet interpreter is:
 
-1. Define a grammar and parser using the Myna library
-2. Execute the generated parser on the input to generate an untyped abstract syntax tree (AST)
-3. Rewrite the AST into an intermediate Lisp-style S-expression
-4. Parse the S-expression using the recursive `eval` function
+1. Load `modules.js`, which is a nested module containing these modules:
+    * `trit`, which defines a three-valued logic.
+    * `int`, which defines arbitrary-precision integers stored in balanced ternary.
+    * `table`, which defines a hash table (object).
+    * `string`, which defines a string which is an array of ASCII characters.
+    * `nullType`, which defines empty null type.
+    * `quit`, which handles errors.
+    * `float`, which defines arbitrary-precision floating-point numbers stored in LNS.
+2. Define a grammar and parser using the Myna library
+3. Execute the generated parser on the input to generate an untyped abstract syntax tree (AST)
+4. Rewrite the AST into an intermediate Lisp-style S-expression, that makes use of the types in `module.js`
+5. Parse the S-expression using the recursive `eval` function
 
 # License
 Owlet is licensed under the MIT License.
