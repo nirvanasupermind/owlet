@@ -4,7 +4,7 @@ An experimental balanced ternary language with C-style syntax. This crate includ
 * [myna-parser](http://github.com/cdiggins/myna-parser/) for the interpreter
 
 # Running owlet
-As this language is work in progress, there is currently no way to run it. See the API.md for a rundown of the syntax.
+As this language is work in progress, there is currently no way to run it. See [API.md](API.md) for a rundown of the syntax.
 
 # Status
 The language work in progress, the not fully designed and there are some tests.

@@ -4,4 +4,5 @@
 
 # Lexical Structure
 This chapter specifies the lexical structure of Owlet. 
+
 # Types, Values, and Variables
