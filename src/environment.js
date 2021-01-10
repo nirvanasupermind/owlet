@@ -21,7 +21,8 @@ class Environment {
     }
 
     lookup(name) {
-        return this.resolve(name).record[name];
+        var orig = this.resolve(name).record[name];
+        return orig;
     }
 
     /**
@@ -29,7 +30,7 @@ class Environment {
      * @param {*} name 
      * @param {*} value 
      */
-    assign(name,value) {
+    assign(name, value) {
         this.resolve(name).record[name] = value;
         return value;
     }
@@ -56,12 +57,6 @@ class Environment {
 
 }
 
-Environment.builtins = new Environment({
-    null: new modules.nullType._Null(),
-    true: new modules.trit._Trit("1"),
-    unknown: new modules.trit._Trit("0"),
-    false: new modules.trit._Trit("N"),
-    VERSION: new modules.string._String("0.1")
-});
+
 
 module.exports = Environment;

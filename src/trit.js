@@ -1,6 +1,7 @@
 const quit = require('./quit.js')
 const BigInteger = require("big-integer")
 
+
 //util
 Object.prototype.clone = function () {
     var instanceOfBlah = this;

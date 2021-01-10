@@ -1,11 +1,27 @@
 const modules = require("./modules.js");
 const assert = require('assert');
 const Environment = require("./environment.js");
+const util = require('util')
+Function.prototype.toJSON = function () {
+    return "(" + this.length + ") " + "<built-in function '" + this.name + "'>"
+}
+Object.prototype._toString = function () {
+    try {
+        var result = JSON.stringify(this);
+        if (typeof this !== "string" && !(this instanceof modules.string._String) && result.charAt(0) === "\"" && result.slice(-1) === "\"") {
+            return result.slice(1, -1);
+        }
+        return result;
+    } catch (e) {
+        modules.quit.warn(e)
+            ;
+        return util.inspect(this);
+    }
+}
 
 var WHILE_LIMIT = 2000;
-Object.prototype._toString = function () {
-    return String(this);
-}
+
+
 /**
  * Owlet interpreter.
  */
@@ -18,7 +34,7 @@ class Owlet {
     // }
 
 
-    constructor(global = Environment.builtins) {
+    constructor(global = GlobalEnviroment) {
         this.global = global;
     }
 
@@ -30,60 +46,14 @@ class Owlet {
      */
     eval(exp, env = this.global) {
 
-        //literals
-        if (isInt(exp) || isString(exp)) {
+        //=============
+        //Literals
+        if (isInt(exp) || isString(exp) || isFloat(exp) || isTable(exp)) {
             return exp;
         }
 
-        //math
-
-        if (exp[0] === '+') {
-            if (isString(exp[1]) || isString(exp[2])) {
-                var t1 = this.eval(exp[1], env);
-                var t2 = this.eval(exp[2], env)
-                var str = modules.string._String;
-                return new str(t1._toString()).concat(new str(t2._toString()));
-            }
-            return this.eval(exp[1], env).add(this.eval(exp[2], env));
-        }
-
-        if (exp[0] === '-') {
-            return this.eval(exp[1], env).sub(this.eval(exp[2], env));
-        }
-
-        if (exp[0] === '*') {
-            return this.eval(exp[1], env).mul(this.eval(exp[2], env));
-        }
-
-        if (exp[0] === '/') {
-            return this.eval(exp[1], env).div(this.eval(exp[2], env));
-        }
-
-        //comparison
-
-        if (exp[0] === '>') {
-            return this.eval(exp[1], env).compareTo(this.eval(exp[2], env)) > 0;
-        }
-
-        if (exp[0] === '>=') {
-            return this.eval(exp[1], env).compareTo(this.eval(exp[2], env)) >= 0;
-        }
-
-        if (exp[0] === '<') {
-            return this.eval(exp[1], env).compareTo(this.eval(exp[2], env)) < 0;
-        }
-
-        if (exp[0] === '<=') {
-            return this.eval(exp[1], env).compareTo(this.eval(exp[2], env)) <= 0;
-        }
-
-        if (exp[0] === '=') {
-            return this.eval(exp[1], env).compareTo(this.eval(exp[2], env)) === 0;
-        }
-
-
-        //variable define
-
+        //=============
+        //Variable define
         if (exp[0] === 'local') {
             const [_, name, value] = exp;
             return env.define(name, this.eval(value, env));
@@ -101,18 +71,17 @@ class Owlet {
         }
 
 
-        //variable lookup
-        if (isVariableName(exp)) {
-            return env.lookup(exp);
-        }
 
-        //block
+
+        //=============
+        //Block statements
         if (exp[0] === 'begin') {
             const blockEnv = new Environment({}, env);
             return this._evalBlock(exp, blockEnv);
         }
 
-        //if
+        //==============
+        //If statement
         if (exp[0] === 'if') {
             const [_tag, condition, consequent, alternate] = exp;
             if (!falsey(this.eval(condition, env))) {
@@ -121,19 +90,94 @@ class Owlet {
             return this.eval(alternate, env);
         }
 
-
-        //while
+        //==============
+        //While statement
         if (exp[0] === 'while') {
             const [_tag, condition, body] = exp;
             var count = new modules.int._Int("0");
             let result;
-            while(!falsey(this.eval(condition,env))) {
-               result = this.eval(body,env) 
+            while (!falsey(this.eval(condition, env))) {
+                result = this.eval(body, env)
             }
             return result;
         }
 
+
+        if (isVariableName(exp)) {
+            //=============
+            //Variable lookup
+
+
+            return env.lookup(exp);
+        };
+
+
+        //2. User-defined function:
+        if (exp[0] === 'def') {
+            const [_tag, name, params, body] = exp;
+            const fn = {
+                params,
+                body,
+                env, // Closure!
+
+            }
+
+
+            return env.define(name, fn);
+        }
+
+        //2. User-defined lambda:
+        if (exp[0] === 'lambda') {
+            const [_tag, params, body, call] = exp;
+            return {
+                params,
+                body,
+                env, // Closure!
+            };
+        }
+
+
+
+
+
+        //==============
+        //Function call
+        if (Array.isArray(exp)) {
+            var fn = this.eval(exp[0], env);
+
+
+            var args = exp.slice(1).map((arg) => this.eval(arg, env));
+            //1. Native function:
+            if (typeof fn === 'function') {
+                return fn(...args);
+            }
+
+            //2. User-defined function:
+            const activationRecord = {};
+            fn.params.forEach((param, index) => {
+                activationRecord[param] = args[index];
+            })
+
+            const activationEnv = new Environment(
+                activationRecord,
+                fn.env //Static scope!
+            );
+
+
+
+            return this._evalBody(fn.body, activationEnv);
+
+        }
+
+
         modules.quit.quit(`Unimplemented: ${JSON.stringify(exp)}`);
+    }
+
+    _evalBody(body, env) {
+        if (body[0] === 'begin') {
+            return this._evalBlock(body, env);
+        }
+        return this.eval(body, env);
     }
 
     _evalBlock(block, env) {
@@ -158,21 +202,26 @@ function isInt(exp) {
     return exp instanceof modules.int._Int;
 }
 
-// function isFloat(exp) {
-//     return exp instanceof modules.float._Float;
-// }
+function isFloat(exp) {
+    return exp instanceof modules.float._Float;
+}
 
 function isString(exp) {
     return exp instanceof modules.string._String;
 }
 
+function isTable(exp) {
+    return exp instanceof modules.table._Table;
+}
+
 function isVariableName(exp) {
-    return typeof exp === 'string' && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(exp);
+    return typeof exp === 'string' && /^[+\-*/<>=a-zA-Z0-9_]*$/.test(exp);
 }
 
 function falsey(exp) {
     return [
         new modules.int._Int("0"),
+        new modules.float._Float(0, 0),
         new modules.trit._Trit("0"),
         new modules.trit._Trit("N"),
         new modules.string._String(new modules.table._Table()),
@@ -182,5 +231,64 @@ function falsey(exp) {
     ].map(JSON.stringify).indexOf(JSON.stringify(exp)) >= 0 || !exp;
 }
 
+//builtins
+var GlobalEnviroment = {
+    null: new modules.nullType._Null(),
+    true: new modules.trit._Trit("1"),
+    unknown: new modules.trit._Trit("0"),
+    false: new modules.trit._Trit("N"),
+    VERSION: new modules.string._String("0.1"),
+    Math: new modules.table._Table(),
+    '+'(op1, op2) {
+        return op1.add(op2);
+    },
+    '-'(op1, op2 = null) {
+        if (op2 == null)
+            return op1.neg();
+        return op1.sub(op2);
+    },
+    '*'(op1, op2) {
+        return op1.mul(op2);
+    },
+    '/'(op1, op2) {
+        return op1.div(op2);
+    },
+    '>'(op1, op2) {
+        return op1.compareTo(op2) > 0;
+    },
+    '>='(op1, op2) {
+        return op1.compareTo(op2) >= 0;
+    },
+    '<'(op1, op2) {
+        return op1.compareTo(op2) < 0;
+    },
+    '<='(op1, op2) {
+        return op1.compareTo(op2) <= 0;
+    },
+    '='(op1, op2) {
+        return op1.compareTo(op2) === 0;
+    },
+    'print'(...args) {
+        console.log(args.map((e) => e._toString()).join(""));
+        return new modules.nullType._Null();
+    },
+    'ord'(op1) {
+        return new modules.int._Int(modules.int._Int.convertToBT(modules.int.ord(op1._toString())));
+    },
+    'get'(table, key) {
+        return table.get(key);
+    },
+    'put'(table, key, value) {
+        return table.set(key, value);
+    }
 
+};
+
+GlobalEnviroment.Math.set(new modules.string._String("PI"), new modules.float._Float(Math.PI));
+GlobalEnviroment.Math.set(new modules.string._String("E"), new modules.float._Float(Math.E));
+GlobalEnviroment.Math.set(new modules.string._String("PHI"), new modules.float._Float((1 + Math.sqrt(5)) / 2));
+
+GlobalEnviroment = new Environment(GlobalEnviroment);
+
+//Export
 module.exports = Owlet;

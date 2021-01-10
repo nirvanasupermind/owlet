@@ -285,8 +285,7 @@ function fromASCII(a) {
         return parseFloat(e) >= 0;
     })*/.map((e) => a.hashes[e]);
 
-
-    a = filtered.map((e) => asciiTable[e.intValue()]);
+    a = filtered.map((e) => asciiTable[e.decimalValue()]);
     return a.join("");
 }
 

@@ -1,28 +1,22 @@
 const modules = require("./modules.js");
+const Owlet = require('./owlet.js')
+var owlet = new Owlet();
+var I = (e) => { return new modules.int._Int(e) };
+var F = (e) => { return new modules.float._Float(e) };
+var S = (e) => { return new modules.string._String(e) };
+var T = modules.table._Table.from;
 
-var I = (e) => { return new modules.int._Int(modules.int._Int.convertToBT(e)) };
-var S = (e) => { return new modules.string._String(e.toString()) };
+var expr = ['begin',
+    ['def', 'factorial', ['x'], [
+        'if',
+        ['=', 'x', I(1)],
+        I(1),
+        ['*', 'x', ['factorial', ['-', 'x', I(2)]]]
+    ]
+    ],
+    ['print', ['factorial', I(19)]]
+]
 
-var a = new modules.float._Float(0.6);
-// var num = new modules.rat._Rat(Math.PI);
-console.log(a.decimalValue());
-// const modules = require("./modules.js");
-// const Owlet = require("./owlet.js");
-// const Environment = require("./environment.js")
-// var owlet2 = new Owlet();
-// var I = (e) => { return new modules.int._Int(modules.int._Int.convertToBT(e)) };
-// var S = (e) => { return new modules.string._String(e.toString()) };
 
-// var input = ['begin',
-//     ['local', 'counter', I(0)],
-//     ['local', 'result', I(0)],
-//     ['while',
-//         ['<', 'counter', I(10)],
-//         ['begin',
-//         ['set', 'result', ['+', 'result', I(1)]],
-//         ['set','counter',['+','counter',I(1)]]
-//         ]
-//     ],
-//     'result'
-// ];
-// console.log(owlet2.eval(input).toString());
+
+console.log(owlet.eval(expr));

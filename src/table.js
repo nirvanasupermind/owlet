@@ -16,6 +16,7 @@ _Table.prototype = {
   //Setts a key-value pair
   set: function (key, value) {
     this.hashes[JSON.stringify(key)] = value;
+    return value;
   },
 
   //Gets a value from keys
@@ -29,8 +30,9 @@ _Table.prototype = {
 };
 
 _Table.prototype.toString = function () {
-  return JSON.stringify(this.hashes);
+  return JSON.stringify(this.hashes).replace(/\:/g,"=");
 }
+
 
 _Table.from = function (o) {
   if (o instanceof _Table) {

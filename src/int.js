@@ -76,6 +76,14 @@ _Int.convertToBT = function (v) {
     }
     return t2(v);
 }
+/**
+ * Absolute value
+ */
+_Int.prototype.abs = function() {
+    if(this.compareTo(new _Int(0)) < 0)
+        return this.neg();
+    return this;
+}
 
 /**
  * Converts arbitrary-precision integer to balanced ternary
@@ -122,7 +130,7 @@ _Int.prototype.bigIntValue = function () {
     for (var i = 0; i < this.length(); i++) {
         var j = this.length() - i - 1;
         var t1 = new trit._Trit(this.value.charAt(i)).bigIntValue();
-        result += new BigInteger(t1).times(new BigInteger(3).pow(new BigInteger(j)));
+        result = result.add(new BigInteger(t1).times(new BigInteger(3).pow(new BigInteger(j))));
     }
 
     return result;
@@ -135,12 +143,13 @@ _Int.prototype.length = function () {
     return this.value.length;
 }
 
-/**
- * Util exponent by 3
- */
-_Int.exp = function (n) {
-    return new _Int("1" + "0".repeat(n));
-}
+// /**
+//  * Util exponent by 3
+//  */
+// _Int.exp = function (n) {
+//     var result = new int._Int(1);
+//     for(var i = 0; i < )
+// }
 
 /** 
  * Lengthens two arguments to the same length
@@ -342,6 +351,7 @@ _Int.prototype.shorter = function (i) {
  * Product of two ints
 */
 _Int.prototype.mul = function (that) {
+    //27 -> 3
     that = new _Int(that);
 
 
@@ -355,51 +365,103 @@ _Int.prototype.mul = function (that) {
     return result;
 }
 
+function factorial(n) {
+    if ((n === 0) || (n === 1))
+      return 1;
+    else
+      return (n * factorial(n - 1));
+}
 
 
+//taken from https://locutus.io/php/strings/ord/
+function ord (string) {
+  const str = string + ''
+  const code = str.charCodeAt(0)
+  if (code >= 0xD800 && code <= 0xDBFF) {
+    // High surrogate (could change last hex to 0xDB7F to treat
+    // high private surrogates as single characters)
+    const hi = code
+    if (str.length === 1) {
+      // This is just a high surrogate with no following low surrogate,
+      // so we return its value;
+      return code
+      // we could also throw an error as it is not a complete character,
+      // but someone may want to know
+    }
+    const low = str.charCodeAt(1)
+    return ((hi - 0xD800) * 0x400) + (low - 0xDC00) + 0x10000
+  }
+  if (code >= 0xDC00 && code <= 0xDFFF) {
+    // Low surrogate
+    // This is just a low surrogate with no preceding high surrogate,
+    // so we return its value;
+    return code
+    // we could also throw an error as it is not a complete character,
+    // but someone may want to know
+  }
+  return code
+}
 
-//division function
-function divide(a, b) {
-    var result = new _Int("N");
-    var a2 = a.clone();
-    //Manual subtraction
-    while (a2.compareTo(new _Int(0)) >= 0) {
-        a2 = a2.sub(b);
-        result = result.add(1);
+function longDivision(number, divisor) {  
+    if(divisor.value === '0')
+        throw new Error('Division by zero')
+
+    if(number.compareTo(divisor) < 0 && number.value.charAt(0) !== "N" && divisor.value.charAt(0) !== "N") {
+        return new _Int(0);
     }
 
-    return [result, a2];
-}
-
-
-/**
- * Quotient of two ints
- */
-
-_Int.prototype.div = function (that) {
-    return divide(this, that)[0];
-}
-
-
-
-
-/**
- * modulo (remainder)
-*/
-_Int.prototype.mod = function (that) {
-    return that.add(divide(this, that)[1]);
-
-}
-
-/**
- * Absolute value
- */
-_Int.prototype.abs = function () {
-    if (this.compareTo(_Int.ZERO) < 0) {
-        return this.neg();
+    if(number.compareTo(new _Int('0')) < 0 && divisor.compareTo(new _Int('0')) >= 0) {
+        return number.neg().div(divisor).neg();
     }
 
-    return this;
+
+    if(number.compareTo(new _Int('0')) >= 0 && divisor.compareTo(new _Int('0')) < 0) {
+        return number.div(divisor.neg()).neg();
+    }
+
+    if(number.compareTo(new _Int('0')) < 0 && divisor.compareTo(new _Int('0')) < 0) {
+        return number.neg().div(divisor.neg());
+    }
+
+
+
+
+    number = number.bigIntValue().toString();
+    divisor = divisor.decimalValue();
+  
+    //As result can be very large store it in string  
+    var ans = "";  
+    //Find prefix of number that is larger than divisor.  
+    var idx = 0;  
+    var temp = ord(number[idx]) - ord('0'); 
+    while (temp < divisor) {
+        temp = (temp * 10 + ord(number[idx + 1]) - ord('0')); 
+        idx += 1;
+    }
+    idx += 1; 
+  
+    //Repeatedly divide divisor with temp. After every division, update temp to 
+    //include one more digit.  
+    while (number.length > idx) {   
+        //Store result in answer i.e. temp / divisor  
+        ans += String.fromCharCode((temp /divisor) + ord('0'));  
+        //Take next digit of number 
+        temp = ((temp % divisor) * 10 + ord(number[idx]) - ord('0')); 
+        idx += 1; 
+    }
+  
+    ans += String.fromCharCode((temp / divisor) + ord('0')); 
+      
+    //If divisor is greater than number  
+    if (ans.length === 0){
+      return "0";
+    }   
+    //else return ans  
+    return new _Int(_Int.bigToBT(ans));
+}
+
+_Int.prototype.div = function(that) {
+    return longDivision(this,that);
 }
 
 
@@ -465,5 +527,5 @@ _Int.max = function (a, b) {
 
 
 //Export
-module.exports = { _Int }
+module.exports = { _Int, ord }
 
