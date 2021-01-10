@@ -1,4 +1,4 @@
-# owlet
+# owlet v0.0
 An experimental balanced ternary language with C-style syntax. This crate includes the interpreter able to decode and run Owlet programs. This is not a full emulator, but it's intended to be used as a library for other applications to use in ternary software development. And it has those dependencies:
 * [BigInteger.js](https://github.com/peterolson/BigInteger.js/) to print numbers
 * [myna-parser](http://github.com/cdiggins/myna-parser/) for the interpreter
