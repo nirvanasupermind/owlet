@@ -1,3 +1,6 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+
 /**
  * This module defines a Myna grammar for the Owlet language. 
  * A Myna grammar is a parsing expression grammar (PEG) that generates a 
@@ -174,4 +177,7 @@ myna_1.Myna.registerGrammar('chickadee', exports.g, exports.g.code);
 exports.chickadeeGrammar = myna_1.Myna.grammars['chickadee'];
 exports.chickadeeParser = myna_1.Myna.parsers['chickadee'];
 exports.chickadeeGrammarString = myna_1.Myna.grammarToString('chickadee');
-
+exports.toSExpression = function() {
+    
+}
+module.exports = exports;

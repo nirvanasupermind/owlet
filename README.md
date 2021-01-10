@@ -4,10 +4,30 @@ An experimental balanced ternary language with C-style syntax. This crate includ
 * [myna-parser](http://github.com/cdiggins/myna-parser/) for the interpreter
 
 # Running owlet
-As this language is work in progress, there is currently no way to run it. See [API.md](API.md) for a rundown of the syntax.
+As this language is work in progress, there is currently no way to run the intended C-style syntax. However, the infrastructure provides a way to run an intermediate S-expression-ish array in node.js using `Owlet.eval()`. Here's anexample of the intermediate expression:
+```js
+['begin',
+    ['def', 'factorial', ['x'], [
+        'if',
+        ['=', 'x', I(1)],
+        I(1),
+        ['*', 'x', ['factorial', ['-', 'x', I(2)]]]
+    ]
+    ],
+    ['print', ['factorial', I(19)]]
+]
+```
+
+Which requires you define this at the start of code:
+```js
+var I = (e) => { return new modules.int._Int(e) };
+var F = (e) => { return new modules.float._Float(e) };
+var S = (e) => { return new modules.string._String(e) };
+var T = modules.table._Table.from;
+```
 
 # Status
-The language work in progress, the not fully designed and there are some tests.
+The language is work in progress, so it's not fully designed and there are some tests.
 
 # How it Works
 The basic logic for the Owlet interpreter is:
