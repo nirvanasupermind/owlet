@@ -36,7 +36,7 @@ var owlet = new Owlet(); //Owlet interpreter
 owlet.evalFile("my-file.owlet")
 ```
 
-You can also evaluate the code in a JavaScript string, using the function `eval`:
+You can also evaluate the code in a JavaScript string, using the function `Owlet.prototype.eval()`:
 ```js
 const Owlet = require("owlet");
 var owlet = new Owlet(); //Owlet interpreter
