@@ -320,18 +320,6 @@ var GlobalEnviroment = {
     'ord'(op1) {
         return new modules.int._Int(modules.int._Int.convertToBT(modules.int.ord(op1._toString())));
     },
-    'substr'(op1, op2, op3) {
-        return op1.substr(op2, op3);
-    },
-    'concat'(op1, op2) {
-        return op1.concat(op2);
-    },
-    'charAt'(op1, op2) {
-        return op1.charAt(op2);
-    },
-    'len'(op1) {
-        return op1.length();
-    },
     'get'(table, key) {
         return table.get(key);
     },

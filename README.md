@@ -13,7 +13,7 @@ Here is an example program:
             (+ (fib (- a 1)) (fib (- a 2)))
         )
     ))
-    (print fib)
+    (print (fib 10))
 )
 ```
 
