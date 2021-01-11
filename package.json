@@ -1,0 +1,32 @@
+{
+  "name": "owlet",
+  "version": "0.1.0",
+  "description": "Programming language for ternary computing",
+  "main": "src/owlet.js",
+  "directories": {
+    "example": "examples"
+  },
+  "dependencies": {
+    "big-integer": "^1.6.48",
+    "myna-parser": "^2.5.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nirvanasupermind/owlet.git"
+  },
+  "keywords": [
+    "ternary",
+    "programming-language",
+    "language"
+  ],
+  "author": "nirvanasupermind",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nirvanasupermind/owlet/issues"
+  },
+  "homepage": "https://github.com/nirvanasupermind/owlet#readme"
+}
