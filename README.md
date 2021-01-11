@@ -28,7 +28,7 @@ The v0.1 implementation of Owlet is written in JavaScript, and recursively evalu
 # API
 An overview of the syntax can be found in [API.md](API.md). 
 
-# Running Owlet
+# Using Owlet
 Owlet files can be run using node using the function `Owlet.prototype.evalFile()`, like so:
 ```js
 const Owlet = require("owlet");
