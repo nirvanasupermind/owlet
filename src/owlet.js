@@ -1,10 +1,13 @@
 const modules = require("./modules.js");
 const assert = require('assert');
 const Environment = require("./environment.js");
-const util = require('util')
+const util = require('util');
+const owletParser = require('./parser/owletParser.js')
+
 Function.prototype.toJSON = function () {
     return "(" + this.length + ") " + "<built-in function '" + this.name + "'>"
 }
+
 Object.prototype._toString = function () {
     try {
         var result = JSON.stringify(this);
@@ -44,7 +47,10 @@ class Owlet {
      * @param {*} exp 
      * @param {*} env 
      */
-    eval(exp, env = this.global) {
+    eval(exp, env = this.global, parse) {
+        if (!parse) {
+            exp = owletParser.parse(exp);
+        }
 
         //=============
         //Literals
@@ -56,7 +62,7 @@ class Owlet {
         //Variable define
         if (exp[0] === 'local') {
             const [_, name, value] = exp;
-            return env.define(name, this.eval(value, env));
+            return env.define(name, this.eval(value, env, true));
         }
 
         if (exp[0] === 'global') {
@@ -67,7 +73,7 @@ class Owlet {
 
         if (exp[0] === 'set') {
             const [_, name, value] = exp;
-            return env.assign(name, this.eval(value, env));
+            return env.assign(name, this.eval(value, env, true));
         }
 
 
@@ -84,10 +90,10 @@ class Owlet {
         //If statement
         if (exp[0] === 'if') {
             const [_tag, condition, consequent, alternate] = exp;
-            if (!falsey(this.eval(condition, env))) {
-                return this.eval(consequent, env);
+            if (!falsey(this.eval(condition, env, true))) {
+                return this.eval(consequent, env, true);
             }
-            return this.eval(alternate, env);
+            return this.eval(alternate, env, true);
         }
 
         //==============
@@ -96,8 +102,8 @@ class Owlet {
             const [_tag, condition, body] = exp;
             var count = new modules.int._Int("0");
             let result;
-            while (!falsey(this.eval(condition, env))) {
-                result = this.eval(body, env)
+            while (!falsey(this.eval(condition, env, true))) {
+                result = this.eval(body, env, true)
             }
             return result;
         }
@@ -143,10 +149,10 @@ class Owlet {
         //==============
         //Function call
         if (Array.isArray(exp)) {
-            var fn = this.eval(exp[0], env);
+            var fn = this.eval(exp[0], env, true);
 
 
-            var args = exp.slice(1).map((arg) => this.eval(arg, env));
+            var args = exp.slice(1).map((arg) => this.eval(arg, env, true));
             //1. Native function:
             if (typeof fn === 'function') {
                 return fn(...args);
@@ -177,14 +183,14 @@ class Owlet {
         if (body[0] === 'begin') {
             return this._evalBlock(body, env);
         }
-        return this.eval(body, env);
+        return this.eval(body, env, true);
     }
 
     _evalBlock(block, env) {
         let result;
         const [_tag, ...expressions] = block;
         expressions.forEach(exp => {
-            result = this.eval(exp, env);
+            result = this.eval(exp, env, true);
         });
 
         return result;

@@ -17,4 +17,4 @@ A **literal** is the source code representation of a value of a type or the null
 * Strings, which are a hash table of ASCII characters combined to produce a run of text. They are circumfixed by the character `"` "quote".
 
 # 1 Types, Values, and Variables
-Owlet is a *dynamically typed language*, which means that every variable and every expression can change types
+Owlet is a *dynamically typed language*, which means that every variable and every expression can change types.

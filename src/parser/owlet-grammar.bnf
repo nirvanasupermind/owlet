@@ -1,0 +1,50 @@
+//Lexical grammar (tokens)
+%lex
+
+%%
+
+\s+ /* skip whitespace */
+
+\"[^"]*\" return 'STRING'
+
+\d+\b(?!\.)|\b0[zZ][01N]+\b return 'INT'
+
+[+-]?([0-9]*[.])[0-9]+ return 'FLOAT'
+
+[\w\-+*=<>/]+  return 'SYMBOL' 
+
+/lex
+
+%%
+
+Exp
+    : Atom
+    | List
+    ;
+    
+Atom 
+    : INT {
+        const modules = require('../modules.js');
+        $$ = new modules.int._Int(modules.int._Int.convertToBT($1))
+    }
+    | FLOAT {
+        const modules = require('../modules.js');
+        $$ = new modules.float._Float(parseFloat($1))
+    }
+    | STRING {
+        const modules = require('../modules.js');
+        $$ = new modules.string._String($1)
+    }
+    | SYMBOL
+    ;
+
+List
+    : '(' ListEntries ')'       { $$ = $2 }
+    ;
+
+ListEntries
+    : ListEntries Exp   { $1.push($2); $$ = $1}
+    | /* empty */       { $$ = [] }
+    ;
+
+
