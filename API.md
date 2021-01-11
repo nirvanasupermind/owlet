@@ -28,7 +28,7 @@ Owlet v0.1 supports the following types:
 
 In v0.1 new types can't be added.
 
-## 1.1.1 The `Trit` Type
+### 1.1.1 The `Trit` Type
 The `Trit` type is a three-valued enumeration in which there are three truth values indicating `true`, `false` and some indeterminate third value (labeled as `unknown` in Owlet). They can also represent balanced ternary digits. Owlet's implementation of trit is based on [Kleene logic](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics), so the unknown value is falsey. The logical operations `&&`, `||` and `^^` can be perfomed on trits:
 ```clojure
 (print (&& unknown true)) //=> unknown
