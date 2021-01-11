@@ -1,6 +1,9 @@
 # Table of Contents
 1. [0 Lexical Structure](#0-lexical-structure)
+    1. [0.1 Comments](#01-comments)
+    1. [0.2 Literals](#02-literals)
 1. [1 Types, Values, and Variables](#1-types-values-and-variables)
+    1. [1.1 Supported Types](#11-supported-types)
 # 0 Lexical Structure
 This chapter specifies the lexical structure of Owlet. Owlet programs are written using the ASCII character set.
 ## 0.1 Comments
@@ -18,14 +21,16 @@ Owlet is a weakly-typed language, which means that variables are not bound to a 
 
 ## 1.1 Supported Types
 Owlet v0.1 supports the following types:
+```
     Trit
     Int
     Float
     Func<T0, T1, ..., TN, R>
+```
 
 In v0.1 new types can't be added.
 
-### 1.1.1 The `Trit` Type
+### 1.1.1 The Type `Trit`
 The `Trit` type is a three-valued enumeration in which there are three truth values indicating `true`, `false` and some indeterminate third value (labeled as `unknown` in Owlet). They can also represent balanced ternary digits. Owlet's implementation of trit is based on [Kleene logic](https://en.wikipedia.org/wiki/Three-valued_logic#Kleene_and_Priest_logics), so the unknown value is falsey. The logical operations `&&`, `||` and `^^` can be perfomed on trits:
 ```clojure
 (print (&& unknown true)) //=> unknown
