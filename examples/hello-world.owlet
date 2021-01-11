@@ -1,6 +1,6 @@
 //The classic "Hello World" example
 //Expected output: "\"Hello World\""
 (begin
-    (print (substr "He" 0 2))
+    (print "Hello World")
 )
 
