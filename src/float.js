@@ -1,5 +1,5 @@
 const int = require("./int.js")
-const scale = /*new int._Int(2000)*/new int._Int("1" + "0".repeat(13)); //The scale for fixed-point numbers
+const scale = /*new int._Int(2000)*/new int._Int("1" + "0".repeat(10)); //The scale for fixed-point numbers
 const scaledec = scale.decimalValue();
 const b = new int._Int(3).mul(scale);
 const clone = (orig) => { return Object.assign(Object.create(Object.getPrototypeOf(orig)), orig) };
@@ -219,6 +219,15 @@ _Float.prototype.add = function (that) {
     return new _Float(add(x, t1));
 }
 
+/**
+ * Subtract two floats
+ */
+_Float.prototype.sub = function(that) {
+  var x = this.x;
+    var y = that.x;
+    var t1 = db(sub(y, x));
+    return new _Float(add(x, t1))
+}
 /**
  * Product of two floats
 */

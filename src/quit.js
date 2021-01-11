@@ -11,13 +11,13 @@ class OwletError extends Error {
 }
 
 
-class Warning {
+class OwletWarning {
     constructor(message) {
         this.message = message;
     }
 
     raise() {
-      console.warn(this.message.toString().replace(/Error/g,"Warning"))
+        console.warn("OwletWarning: " + this.message.toString().split(": ").slice(1));
     }
 }
 function quit(msg) {
@@ -29,7 +29,7 @@ function quit(msg) {
 }
 
 function warn(msg) {
-    new Warning(msg).raise();
+    new OwletWarning(msg).raise();
 }
 
 // //Assertion
@@ -42,4 +42,4 @@ function warn(msg) {
 
 
 
-module.exports = { quit, warn, OwletError, Warning };
+module.exports = { quit, warn, OwletError, OwletWarning };

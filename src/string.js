@@ -292,15 +292,15 @@ function fromASCII(a) {
 function fromCaret(a) {
     var filtered = Object.getOwnPropertyNames(a.hashes).filter(function (e) {
         e = Object.assign(new int._Int(), JSON.parse(e));
-        if (e.intValue) {
-            return e.intValue() >= 0;
+        if (e.decimalValue) {
+            return e.decimalValue() >= 0;
         } else {
             return false
         }
     }).map((e) => a.hashes[e]);
 
 
-    a = filtered.map((e) => caretTable[e.intValue()] || asciiTable[e.intValue()]);
+    a = filtered.map((e) => caretTable[e.decimalValue()] || asciiTable[e.decimalValue()]);
     return a.join("");
 }
 
@@ -351,6 +351,9 @@ _String.prototype.length = function () {
  */
 _String.prototype.charAt = function (i) {
     i = new int._Int(i);
+    if(i.compareTo(new int._Int(0)) < 0) {
+        return new _String(asciiTable[this.value.hashes[this.length()-i]])
+    }
     return new _String(asciiTable[this.value.hashes[i]]);
 }
 
@@ -394,7 +397,7 @@ _String.prototype.substr = function (a, b) {
 
 
     var result = new table._Table();
-    for (var i = a.intValue(); i < b.intValue(); i++) {
+    for (var i = a.decimalValue(); i < b.decimalValue(); i++) {
         result.set(new int._Int(i), this.charAt(new int._Int(i)).value.hashes[0]);
     }
 
@@ -410,6 +413,7 @@ _String.prototype.compareTo = function(that) {
     return this.toString().localeCompare(that.toString());
 }
 
+// _String.prototype.toJSON = _String.prototype.toString;
 
 
 module.exports = {_String};

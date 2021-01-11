@@ -1,0 +1,11 @@
+//This program computes the nth fibonacci number
+//Expected output: 89
+(begin
+    (def fib(a) (begin
+        (if (<= a 1)
+            1
+            (+ (fib (- a 1)) (fib (- a 2)))
+        )
+    ))
+    (print fib)
+)

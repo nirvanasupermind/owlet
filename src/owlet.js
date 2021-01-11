@@ -5,7 +5,7 @@ const util = require('util');
 const owletParser = require('./parser/owletParser.js')
 
 Function.prototype.toJSON = function () {
-    return "(" + this.length + ") " + "<built-in function '" + this.name + "'>"
+    return "<built-in function '" + this.name + "'>"
 }
 
 Object.prototype._toString = function () {
@@ -49,6 +49,7 @@ class Owlet {
      */
     eval(exp, env = this.global, parse) {
         if (!parse) {
+            exp = removeComments(exp);
             exp = owletParser.parse(exp);
         }
 
@@ -58,6 +59,10 @@ class Owlet {
             return exp;
         }
 
+        //Pass (do nothing)
+        if (exp[0] === "pass") {
+            return new modules.nullType._Null();
+        }
         //=============
         //Variable define
         if (exp[0] === 'local') {
@@ -179,6 +184,19 @@ class Owlet {
         modules.quit.quit(`Unimplemented: ${JSON.stringify(exp)}`);
     }
 
+    evalFile(url, env = this.global) {
+        const fs = require('fs')
+
+        try {
+            const data = fs.readFileSync(url, 'utf8')
+            return this.eval(data);
+        } catch (err) {
+            console.error(err)
+        }
+
+
+    }
+
     _evalBody(body, env) {
         if (body[0] === 'begin') {
             return this._evalBlock(body, env);
@@ -221,13 +239,14 @@ function isTable(exp) {
 }
 
 function isVariableName(exp) {
-    return typeof exp === 'string' && /^[+\-*/<>=a-zA-Z0-9_]*$/.test(exp);
+    return typeof exp === 'string' && /^[+\-*/<>=a-zA-Z0-9_&\|\^]*$/.test(exp);
 }
 
 function falsey(exp) {
     return [
         new modules.int._Int("0"),
         new modules.float._Float(0, 0),
+        new modules.float._Float(-1),
         new modules.trit._Trit("0"),
         new modules.trit._Trit("N"),
         new modules.string._String(new modules.table._Table()),
@@ -244,7 +263,9 @@ var GlobalEnviroment = {
     unknown: new modules.trit._Trit("0"),
     false: new modules.trit._Trit("N"),
     VERSION: new modules.string._String("0.1"),
-    Math: new modules.table._Table(),
+    PI: new modules.float._Float(Math.PI),
+    E: new modules.float._Float(Math.E),
+    PHI: new modules.float._Float((1 + Math.sqrt(5)) / 2),
     '+'(op1, op2) {
         return op1.add(op2);
     },
@@ -260,39 +281,76 @@ var GlobalEnviroment = {
         return op1.div(op2);
     },
     '>'(op1, op2) {
-        return op1.compareTo(op2) > 0;
+        return new modules.trit._Trit(op1.compareTo(op2) > 0);
     },
     '>='(op1, op2) {
-        return op1.compareTo(op2) >= 0;
+        return new modules.trit._Trit(op1.compareTo(op2) >= 0);
     },
     '<'(op1, op2) {
-        return op1.compareTo(op2) < 0;
+        return new modules.trit._Trit(op1.compareTo(op2) < 0);
     },
     '<='(op1, op2) {
-        return op1.compareTo(op2) <= 0;
+        return new modules.trit._Trit(op1.compareTo(op2) <= 0);
     },
     '='(op1, op2) {
-        return op1.compareTo(op2) === 0;
+        return new modules.trit._Trit(op1.compareTo(op2) === 0);
+    },
+    '&'(op1, op2) {
+        return new modules.int._Int(op1.and(op2));
+    },
+    "|"(op1, op2) {
+        return new modules.int._Int(op1.or(op2))
+    },
+    "^"(op1, op2) {
+        return new modules.int._Int(op1.xor(op2));
+    },
+    '&&'(op1, op2) {
+        return new modules.trit._Trit(op1.and(op2));
+    },
+    '||'(op1, op2) {
+        return new modules.trit._Trit(op1.or(op2));
+    },
+    '^^'(op1, op2) {
+        return new modules.trit._Trit(op1.xor(op2));
     },
     'print'(...args) {
-        console.log(args.map((e) => e._toString()).join(""));
+        console.log(args.map((e) => e._toString()).join(" "));
         return new modules.nullType._Null();
     },
     'ord'(op1) {
         return new modules.int._Int(modules.int._Int.convertToBT(modules.int.ord(op1._toString())));
+    },
+    'substr'(op1, op2, op3) {
+        return op1.substr(op2, op3);
+    },
+    'concat'(op1, op2) {
+        return op1.concat(op2);
+    },
+    'charAt'(op1, op2) {
+        return op1.charAt(op2);
+    },
+    'len'(op1) {
+        return op1.length();
     },
     'get'(table, key) {
         return table.get(key);
     },
     'put'(table, key, value) {
         return table.set(key, value);
+    },
+    'inspect'(op1) {
+        return new modules.string._String(op1._toString());
     }
+
 
 };
 
-GlobalEnviroment.Math.set(new modules.string._String("PI"), new modules.float._Float(Math.PI));
-GlobalEnviroment.Math.set(new modules.string._String("E"), new modules.float._Float(Math.E));
-GlobalEnviroment.Math.set(new modules.string._String("PHI"), new modules.float._Float((1 + Math.sqrt(5)) / 2));
+function removeComments(string) {
+    //Takes a string of code, not an actual function.
+    return string.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').trim();//Strip comments
+}
+
+
 
 GlobalEnviroment = new Environment(GlobalEnviroment);
 

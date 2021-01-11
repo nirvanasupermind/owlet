@@ -3,13 +3,8 @@ const Owlet = require('./owlet.js')
 // const parser = require('./parser.js')
 const owletParser = require('./parser/owletParser.js')
 var owlet = new Owlet();
-function test(owlet, code) {
-    return owlet.eval(code);
-}
 
-test(owlet, `(begin
-    (print "Hello World")
-)`);
+owlet.evalFile("./examples/hello-world.owlet")
 // var I = (e) => { return new modules.int._Int(e) };
 // var F = (e) => { return new modules.float._Float(e) };
 // var S = (e) => { return new modules.string._String(e) };

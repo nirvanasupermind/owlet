@@ -19,7 +19,14 @@ Object.prototype.clone = function () {
 function _Trit(ch) {
     var a = ch;
     if (a instanceof _Trit) {
-        this.ch = a;
+        Object.assign(this,a);
+    } else if(typeof a === "boolean") {
+        if(a) {
+            this.ch = "1"
+        } else {
+            this.ch = "N"
+        }
+
     } else if (typeof a === "number") {
         if (a === -1) {
             this.ch = "N";

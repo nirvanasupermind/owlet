@@ -11,7 +11,7 @@
 
 [+-]?([0-9]*[.])[0-9]+ return 'FLOAT'
 
-[\w\-+*=<>/]+  return 'SYMBOL' 
+[\w\-+*=<>/&\|\^]+  return 'SYMBOL' 
 
 /lex
 
@@ -33,7 +33,7 @@ Atom
     }
     | STRING {
         const modules = require('../modules.js');
-        $$ = new modules.string._String($1)
+        $$ = new modules.string._String($1.slice(1,-1))
     }
     | SYMBOL
     ;
