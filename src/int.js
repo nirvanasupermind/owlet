@@ -21,7 +21,7 @@ function _Int(s) {
         this.value = "0";
     } else if (s instanceof _Int) {
         Object.assign(this, s);
-        break;
+        return;
     } else if (typeof s === "number") {
         s = _Int.convertToBT(s);
     } else if (Array.isArray(s)) {
