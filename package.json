@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "big-integer": "^1.6.48",
+    "syntax-cli": "^0.1.21",
     "myna-parser": "^2.5.1"
   },
   "devDependencies": {},
