@@ -38,4 +38,5 @@ The `Trit` type is a three-valued enumeration in which there are three truth val
 
 They are also based on Kleene logic.
 
-
+### 1.1.2 The Type `Int`
+The `Int` type represents 

@@ -16,7 +16,7 @@ Here is an example program:
 )
 ```
 
-For more examples see the `examples` folder.
+For more examples see the `examples` folder. The current version of Owlet is v0.1.
 
 # What is Owlet?
 A **ternary computer** (also called trinary computer) is a computer that uses ternary logic (three possible values) instead of the more popular binary system ("Base 2") in its calculations. The dialect of ternary (balanced ternary) used in owlet has digits for {-1,0,1}. Yes, this means EVERY number is signed. owlet is a high-level implementation of a ternary computer,minus the CPU and RAM. This allows it to be used effectively as a library for other applications and ternary computers that require heavyweight computations.
