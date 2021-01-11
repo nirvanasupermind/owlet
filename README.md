@@ -24,6 +24,8 @@ A **ternary computer** (also called trinary computer) is a computer that uses te
 # Implementation 
 The v0.1 implementation of Owlet is written in JavaScript, and recursively evaluates the expression. It has multiple files to deal with each ternary data type such as ints and floats. The language implementation is quite small and simple compared to other weakly typed languages. Since the syntax is based on S-expression, the parser can be very small.
 
+# API
+An overview of the syntax can be found in [API.md](API.md). 
 
 # Running Owlet
 Owlet files can be run using node using the function `Owlet.prototype.evalFile()`, like so:
@@ -40,7 +42,7 @@ var owlet = new Owlet(); //Owlet interpreter
 owlet.eval("<put code here>")
 ```
 
-These examples require that you have Owlet installed on npm, which can be done on Unix systems by typing `npm install owlet` into your terminal. An overview of the syntax can be found in [API.md](API.md). 
+These examples require that you have Owlet installed on npm, which can be done on Unix systems by typing `npm install owlet` into your terminal. 
 
 # Status
 The main part of this language is complete, although it may be expanded on later.
