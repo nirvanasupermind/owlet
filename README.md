@@ -1,4 +1,5 @@
-# owlet[![npm version](https://badge.fury.io/js/owlet.svg)](https://badge.fury.io/js/owlet)
+# owlet
+<br />[![npm version](https://badge.fury.io/js/owlet.svg)](https://badge.fury.io/js/owlet)
 Owlet is a high-level language for balanced ternary software development, using S-expression syntax. It was made using node.js. The infrastructure includes the interpreter able to run and decode Owlet programs. This is *not* a full [ternary computer](https://en.wikipedia.org/wiki/Ternary_computer), but is intended to be used as a library for other applications to use. And it has these dependencies:
 * [BigInteger.js](https://github.com/peterolson/BigInteger.js/) to print numbers
 * [syntax](https://github.com/DmitrySoshnikov/syntax) for the parser
