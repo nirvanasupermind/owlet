@@ -1,9 +1,6 @@
 # Table of Contents
 1. [0 Lexical Structure](#0-lexical-structure)
-    * [0.1 Comments](#0-1-comments)
-    * [0.2 Literals](#0-2-literals)
 1. [1 Types, Values, and Variables](#1-types-values-and-variables)
-    * [1.1 Supported Types](#1-1-supported-types)
 # 0 Lexical Structure
 This chapter specifies the lexical structure of Owlet. Owlet programs are written using the ASCII character set.
 ## 0.1 Comments
