@@ -29,6 +29,14 @@ The v0.1 implementation of Owlet is written in JavaScript, and recursively evalu
 An overview of the syntax can be found in [API.md](API.md). 
 
 # Using Owlet
+
+You can evaluate Owlet code in a JavaScript string, using the function `Owlet.prototype.eval()`:
+```js
+const Owlet = require("owlet");
+var owlet = new Owlet(); //Owlet interpreter
+owlet.eval("<put code here>")
+```
+
 Owlet files can be run using node using the function `Owlet.prototype.evalFile()`, like so:
 ```js
 const Owlet = require("owlet");
@@ -36,12 +44,7 @@ var owlet = new Owlet(); //Owlet interpreter
 owlet.evalFile("my-file.owlet")
 ```
 
-You can also evaluate the code in a JavaScript string, using the function `Owlet.prototype.eval()`:
-```js
-const Owlet = require("owlet");
-var owlet = new Owlet(); //Owlet interpreter
-owlet.eval("<put code here>")
-```
+Note that relative directories will be with respect to the folder you run node from.
 
 These examples require that you have Owlet installed on npm, which can be done on Unix systems by typing `npm install owlet` into your terminal. 
 
