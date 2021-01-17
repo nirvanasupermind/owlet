@@ -1,5 +1,6 @@
 const nullType = require("./null.js");
 const quit = require("./quit.js");
+const util = require("util");
 /**
  * This module defines a dictionary (hash table).
  * Credits to Jerry Ejonavi for making part of the code.
@@ -23,24 +24,25 @@ _Table.prototype = {
   get: function (key) {
     var result = this.hashes[JSON.stringify(key)];
     if (result === undefined) {
-     result = new nullType._Null();
+      result = new nullType._Null();
     }
     return result;
   }
 };
 
 _Table.prototype.toString = function () {
-  return JSON.stringify(this.hashes).replace(/\:/g,"=");
+  return JSON.stringify(this.hashes);
 }
 
+_Table.prototype.toJSON = _Table.prototype.toString;
 
 _Table.from = function (o) {
   if (o instanceof _Table) {
     return o;
   } else {
     var result = new _Table();
-    for (var i = 0; i < Object.getOwnPropertyNames(o).length; i++) {
-      result.set(Object.getOwnPropertyNames(o)[i], o[Object.getOwnPropertyNames(o)[i]]);
+    for (var i = 0; i < Object.keys(o).length; i++) {
+      result.set(Object.keys(o)[i], o[Object.keys(o)[i]]);
     }
 
     return result;

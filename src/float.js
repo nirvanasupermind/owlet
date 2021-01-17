@@ -15,7 +15,7 @@ function _Float(x, s) {
         lg *= scaledec;
         lg = Math.floor(lg);
 
-        this.x = new int._Int(lg);
+        this.x = new int._Int(int._Int.convertToBT(lg));
         this.s = Math.sign(x);
     } else {
         if(s == null)

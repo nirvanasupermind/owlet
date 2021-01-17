@@ -9,6 +9,7 @@ Function.prototype.toJSON = function () {
 }
 
 Object.prototype._toString = function () {
+   
     try {
         var result = JSON.stringify(this);
         if (typeof this !== "string" && !(this instanceof modules.string._String) && result.charAt(0) === "\"" && result.slice(-1) === "\"") {
@@ -16,9 +17,11 @@ Object.prototype._toString = function () {
         }
         return result;
     } catch (e) {
-        modules.quit.warn(e)
-            ;
-        return util.inspect(this);
+        if(e.toString().includes("Converting circular structure to JSON")) {
+            return util.inspect(this);
+        } else {
+            throw e;
+        }
     }
 }
 
@@ -150,13 +153,10 @@ class Owlet {
 
 
 
-
         //==============
         //Function call
         if (Array.isArray(exp)) {
             var fn = this.eval(exp[0], env, true);
-
-
             var args = exp.slice(1).map((arg) => this.eval(arg, env, true));
             //1. Native function:
             if (typeof fn === 'function') {
@@ -320,24 +320,21 @@ var GlobalEnviroment = {
     'ord'(op1) {
         return new modules.int._Int(modules.int._Int.convertToBT(modules.int.ord(op1._toString())));
     },
-    'get'(table, key) {
+    'read'(table, key) {
         return table.get(key);
     },
-    'put'(table, key, value) {
+    'write'(table, key, value) {
         return table.set(key, value);
     },
-    'inspect'(op1) {
+    'toString'(op1) {
         return new modules.string._String(op1._toString());
     }
-
-
 };
 
 function removeComments(string) {
     //Takes a string of code, not an actual function.
     return string.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').trim();//Strip comments
 }
-
 
 
 GlobalEnviroment = new Environment(GlobalEnviroment);

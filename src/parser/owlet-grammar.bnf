@@ -13,6 +13,8 @@
 
 [\w\-+*=<>/&\|\^]+  return 'SYMBOL' 
 
+\{((.+?):(.+?))*\}|/\{([^:]|\,\s*)*\} return 'TABLE'
+
 /lex
 
 %%
@@ -29,12 +31,54 @@ Atom
     }
     | FLOAT {
         const modules = require('../modules.js');
-        $$ = new modules.float._Float(parseFloat($1))
+        $$ = new modules.float._Float(parseFloat($1));
     }
     | STRING {
         const modules = require('../modules.js');
         $$ = new modules.string._String($1.slice(1,-1))
     }
+    | TABLE {
+        const modules =  require('../modules.js');
+        function toTernary(a) {
+     
+            if (typeof a === "number") {
+                if (a % 1 === 0) {
+                    return new modules.int._Int(modules.int._Int.convertToBT(a));
+                }
+                return new modules.float._Float(parseFloat(a));
+            } else if (typeof a === "boolean") {
+                return new modules.trit._Trit(a);
+            } else if (a.constructor.name === "Object" || a.constructor.name === "Array") {
+                var b = {};
+                for(var i = 0; i < Object.keys(a).length; i++) {
+                    b[toTernary(Object.keys(a)[i])] = toTernary(a[Object.keys(a)[i]]);
+                }
+                return modules.table._Table.from(b);
+            } else if(typeof a === "string") {
+                return new modules.string._String(a._toString());
+            }
+            return new modules.string._String(a._toString());
+        }
+        
+
+        for(var i = 0; i < 50; i++) {
+           $1 = $1.replace(/\{[^:]+\}/g,function(x){ 
+               return '['+x.slice(1,-1)+']';
+           })
+        }
+
+        for(var i = 0; i < 50; i++) {
+        $1 = $1.replace(/\[(.*?)\}|\{(.*?)\]/g,function (x) {
+            return '['+x.slice(1,-1)+']';
+        })
+        }
+
+        $$ = toTernary(JSON.parse($1));
+
+            
+
+        }
+    
     | SYMBOL
     ;
 
@@ -46,5 +90,3 @@ ListEntries
     : ListEntries Exp   { $1.push($2); $$ = $1}
     | /* empty */       { $$ = [] }
     ;
-
-
