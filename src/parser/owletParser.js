@@ -80,7 +80,7 @@ const productions = [[-1,1,(_1) => { __ = _1 }],
      }],
 [1,1,(_1) => { 
         const modules = require('../modules.js');
-        __ = new modules.string._String(_1.slice(1,-1))
+        __ = new modules.string._String(modules.string.unicodeEscape(_1.slice(1,-1)))
      }],
 [1,1,(_1) => { 
         const modules =  require('../modules.js');

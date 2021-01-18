@@ -31,10 +31,12 @@ _Table.prototype = {
 };
 
 _Table.prototype.toString = function () {
-  return JSON.stringify(this.hashes);
+  return JSON.stringify(this);
 }
 
-_Table.prototype.toJSON = _Table.prototype.toString;
+_Table.prototype.toJSON = function () {
+  return this.hashes;
+}
 
 _Table.from = function (o) {
   if (o instanceof _Table) {

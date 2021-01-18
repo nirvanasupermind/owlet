@@ -5,6 +5,14 @@ const int = require("./int.js");
 const quit = require("./quit.js");
 const table = require("./table.js");
 
+function unicodeEscape(x) {
+    var r = /&#([0-9]+);/gi;
+    x = x.replace(r, function (match, grp) {
+        return String.fromCharCode(parseFloat(grp));
+    });
+    return x;
+}
+
 //Here's a table of ascii characters
 var asciiTable = {
     "0": "\u0000",
@@ -351,8 +359,8 @@ _String.prototype.length = function () {
  */
 _String.prototype.charAt = function (i) {
     i = new int._Int(i);
-    if(i.compareTo(new int._Int(0)) < 0) {
-        return new _String(asciiTable[this.value.hashes[this.length()-i]])
+    if (i.compareTo(new int._Int(0)) < 0) {
+        return new _String(asciiTable[this.value.hashes[this.length() - i]])
     }
     return new _String(asciiTable[this.value.hashes[i]]);
 }
@@ -368,7 +376,7 @@ _String.prototype.concat = function (that) {
     }
 
     for (var j = int._Int.ZERO; j < that.length(); j = j.add(1)) {
-        result.set(j.add(this.length()),that.value.get(j));
+        result.set(j.add(this.length()), that.value.get(j));
     }
 
     return new _String(result);
@@ -409,11 +417,11 @@ _String.prototype.substr = function (a, b) {
 /**
  * Locale comparison
  */
-_String.prototype.compareTo = function(that) {
+_String.prototype.compareTo = function (that) {
     return this.toString().localeCompare(that.toString());
 }
 
 // _String.prototype.toJSON = _String.prototype.toString;
 
 
-module.exports = {_String};
+module.exports = { _String, unicodeEscape };

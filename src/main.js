@@ -4,13 +4,8 @@ const Owlet = require('./owlet.js')
 const owletParser = require('./parser/owletParser.js')
 var owlet = new Owlet();
 
-owlet.eval(`(begin
-    (local grid {
-        {1,2,3},
-        {2,3,4}
-    })
-    (print grid)
-)`);
+
+owlet.evalFile("test.owlet")
 // owlet.evalFile("./examples/hello-world.owlet")
 // var I = (e) => { return new modules.int._Int(e) };
 // var F = (e) => { return new modules.float._Float(e) };

@@ -35,7 +35,7 @@ Atom
     }
     | STRING {
         const modules = require('../modules.js');
-        $$ = new modules.string._String($1.slice(1,-1))
+        $$ = new modules.string._String(modules.string.unicodeEscape($1.slice(1,-1)))
     }
     | TABLE {
         const modules =  require('../modules.js');

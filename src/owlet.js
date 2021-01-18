@@ -9,20 +9,10 @@ Function.prototype.toJSON = function () {
 }
 
 Object.prototype._toString = function () {
-   
-    try {
-        var result = JSON.stringify(this);
-        if (typeof this !== "string" && !(this instanceof modules.string._String) && result.charAt(0) === "\"" && result.slice(-1) === "\"") {
-            return result.slice(1, -1);
-        }
-        return result;
-    } catch (e) {
-        if(e.toString().includes("Converting circular structure to JSON")) {
-            return util.inspect(this);
-        } else {
-            throw e;
-        }
+    if(this instanceof modules.string._String) {
+        return '"'+this.toString()+'"';
     }
+    return this.toString();
 }
 
 var WHILE_LIMIT = 2000;
@@ -185,10 +175,11 @@ class Owlet {
     }
 
     evalFile(url, env = this.global) {
-        const fs = require('fs')
+        const fs = require('fs'),
+        path = require('path')
 
         try {
-            const data = fs.readFileSync(url, 'utf8')
+            const data = fs.readFileSync(path.join(__dirname, url), 'utf8')
             return this.eval(data);
         } catch (err) {
             console.error(err)
