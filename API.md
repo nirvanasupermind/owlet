@@ -35,5 +35,4 @@ Owlet v0.1 supports the following types:
     Null
 ```
 
-In v0.1 new types can't be added. [Functions](#2-functions-and-functional-programming) are also a data type, 
-
+In v0.1 new types can't be added. [Functions](#2-functions-and-functional-programming) are represented by a JavaScript object rather than a data type.

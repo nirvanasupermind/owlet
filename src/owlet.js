@@ -4,16 +4,18 @@ const Environment = require("./environment.js");
 const util = require('util');
 const owletParser = require('./parser/owletParser.js')
 
-Function.prototype.toJSON = function () {
-    return "<built-in function '" + this.name + "'>"
-}
-
 Object.prototype._toString = function () {
-    if(this instanceof modules.string._String) {
-        return '"'+this.toString()+'"';
+    if (this instanceof modules.string._String) {
+        return '"' + this.toString() + '"';
     }
     return this.toString();
 }
+
+
+Function.prototype._toString = function () {
+    return "<built-in function '" + this.name + "'>"
+}
+
 
 var WHILE_LIMIT = 2000;
 
@@ -110,8 +112,6 @@ class Owlet {
         if (isVariableName(exp)) {
             //=============
             //Variable lookup
-
-
             return env.lookup(exp);
         };
 
@@ -176,7 +176,7 @@ class Owlet {
 
     evalFile(url, env = this.global) {
         const fs = require('fs'),
-        path = require('path')
+            path = require('path')
 
         try {
             const data = fs.readFileSync(path.join(__dirname, url), 'utf8')
@@ -227,6 +227,37 @@ function isString(exp) {
 
 function isTable(exp) {
     return exp instanceof modules.table._Table;
+}
+
+function toTernary(a) {
+    if (a.constructor.name === "Function" || a.params) {
+        return a;
+    }
+
+    //=============
+    //Literals
+    var exp = a;
+    if (isInt(exp) || isString(exp) || isFloat(exp) || isTable(exp)) {
+        return exp;
+    }
+
+    if (typeof a === "number") {
+        if (a % 1 === 0) {
+            return new modules.int._Int(modules.int._Int.convertToBT(a));
+        }
+        return new modules.float._Float(parseFloat(a));
+    } else if (typeof a === "boolean") {
+        return new modules.trit._Trit(a);
+    } else if (a.constructor.name === "Object" || a.constructor.name === "Array") {
+        var b = {};
+        for (var i = 0; i < Object.keys(a).length; i++) {
+            b[toTernary(Object.keys(a)[i])] = toTernary(a[Object.keys(a)[i]]);
+        }
+        return modules.table._Table.from(b);
+    } else if (typeof a === "string") {
+        return new modules.string._String(a._toString());
+    }
+    return new modules.string._String(a._toString());
 }
 
 function isVariableName(exp) {
@@ -312,13 +343,25 @@ var GlobalEnviroment = {
         return new modules.int._Int(modules.int._Int.convertToBT(modules.int.ord(op1._toString())));
     },
     'read'(table, key) {
+        // if (!(table instanceof modules.table._Table)) {
+        //     return toTernary(table[key]);
+        // }
         return table.get(key);
     },
     'write'(table, key, value) {
+        // if (!(table instanceof modules.table._Table)) {
+        //     return table[key] = value;
+        // }
         return table.set(key, value);
     },
-    'toString'(op1) {
-        return new modules.string._String(op1._toString());
+    'length'(table) {
+        return Object.getOwnPropertyNames(table.hashes).length;
+    },
+    'keys'(table) {
+        return toTernary(Object.getOwnPropertyNames(table.hashes).map((e) => JSON.parse(e)));
+    },
+    'values'(table) {
+      return toTernary(Object.getOwnPropertyNames(table.hashes).map((e) => table.get(JSON.parse(e))));
     }
 };
 

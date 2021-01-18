@@ -72,7 +72,12 @@ const productions = [[-1,1,(_1) => { __ = _1 }],
 [0,1,(_1) => { __ = _1 }],
 [1,1,(_1) => { 
         const modules = require('../modules.js');
-        __ = new modules.int._Int(modules.int._Int.convertToBT(_1))
+        const BigInteger = require('big-integer')
+        if(_1.slice(0,2) === "0z") {
+            __ = new modules.int._Int(_1.slice(2))
+        } else {
+        __ = new modules.int._Int(modules.int._Int.bigToBT(BigInteger(_1)))
+        }
      }],
 [1,1,(_1) => { 
         const modules = require('../modules.js');

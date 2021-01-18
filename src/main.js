@@ -3,8 +3,6 @@ const Owlet = require('./owlet.js')
 // const parser = require('./parser.js')
 const owletParser = require('./parser/owletParser.js')
 var owlet = new Owlet();
-
-
 owlet.evalFile("test.owlet")
 // owlet.evalFile("./examples/hello-world.owlet")
 // var I = (e) => { return new modules.int._Int(e) };

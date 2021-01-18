@@ -27,7 +27,12 @@ Exp
 Atom 
     : INT {
         const modules = require('../modules.js');
-        $$ = new modules.int._Int(modules.int._Int.convertToBT($1))
+        const BigInteger = require('big-integer')
+        if($1.slice(0,2) === "0z") {
+            $$ = new modules.int._Int($1.slice(2))
+        } else {
+        $$ = new modules.int._Int(modules.int._Int.bigToBT(BigInteger($1)))
+        }
     }
     | FLOAT {
         const modules = require('../modules.js');
