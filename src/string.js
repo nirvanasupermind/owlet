@@ -421,7 +421,10 @@ _String.prototype.compareTo = function (that) {
     return this.toString().localeCompare(that.toString());
 }
 
-// _String.prototype.toJSON = _String.prototype.toString;
+_String.prototype._toString = function() {
+    return "\""+this.toString()+"\""
+}
+
 
 
 module.exports = { _String, unicodeEscape };

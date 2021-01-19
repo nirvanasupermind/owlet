@@ -4,16 +4,10 @@ const Environment = require("./environment.js");
 const util = require('util');
 const owletParser = require('./parser/owletParser.js')
 
-Object.prototype._toString = function () {
-    if (this instanceof modules.string._String) {
-        return '"' + this.toString() + '"';
-    }
-    return this.toString();
-}
 
 
 Function.prototype._toString = function () {
-    return "<built-in function '" + this.name + "'>"
+    return "[built-in function: " + this.name + "]"
 }
 
 
@@ -48,6 +42,36 @@ class Owlet {
             exp = owletParser.parse(exp);
         }
 
+        if (typeof exp === "string" && exp.charAt(0) === "{" && exp.slice(-1) === "}") {
+            var result = new modules.table._Table();
+            if (exp === "{}") { } else if (exp.includes(":")) {
+                var els = exp.slice(1, -1).split(",").map((e) => e.split(":"));
+                for (var i = 0; i < els.length; i++) {
+                    result.set(this.eval(els[i][0], env), this.eval(els[i][1], env));
+                }
+            } else {
+                var els = exp.slice(1, -1).split(",");
+                for (var i = 0; i < els.length; i++) {
+                    result.set(new modules.int._Int(i), this.eval(els[i], env));
+                }
+            }
+
+            return result;
+        }
+
+        if (typeof exp === "string" && exp.charAt(0) === "<" && exp.slice(-1) === ">") {
+            var result = [];
+            if (exp === "<>") { } else {
+                var els = exp.slice(1, -1).split(",");
+                for (var i = 0; i < els.length; i++) {
+                    result.push(this.eval(els[i], env));
+                }
+            }
+
+            return new modules.tuple._Tuple(...result);
+        }
+
+
         //=============
         //Literals
         if (isInt(exp) || isString(exp) || isFloat(exp) || isTable(exp)) {
@@ -58,6 +82,7 @@ class Owlet {
         if (exp[0] === "pass") {
             return new modules.nullType._Null();
         }
+
         //=============
         //Variable define
         if (exp[0] === 'local') {
@@ -165,7 +190,6 @@ class Owlet {
             );
 
 
-
             return this._evalBody(fn.body, activationEnv);
 
         }
@@ -266,14 +290,8 @@ function isVariableName(exp) {
 
 function falsey(exp) {
     return [
-        new modules.int._Int("0"),
-        new modules.float._Float(0, 0),
-        new modules.float._Float(-1),
         new modules.trit._Trit("0"),
         new modules.trit._Trit("N"),
-        new modules.string._String(new modules.table._Table()),
-        new modules.table._Table(),
-        // new modules.float._Float(modules.int._Int.ZERO, modules.int._Int.ZERO),
         new modules.nullType._Null()
     ].map(JSON.stringify).indexOf(JSON.stringify(exp)) >= 0 || !exp;
 }

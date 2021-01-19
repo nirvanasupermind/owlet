@@ -11,7 +11,8 @@ const string = require("./string.js");
 const nullType = require("./null.js");
 const quit = require("./quit.js");
 const float = require("./float.js")
+const tuple = require("./tuple.js")
 // const rat = require("./rat.js");
 
-module.exports = { BigInteger, trit, int, table, string, nullType, quit, float/*,rat*/ }
+module.exports = { BigInteger, trit, int, table, tuple, string, nullType, quit, float/*,rat*/ }
 

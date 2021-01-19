@@ -6,4 +6,9 @@ const BigInteger = require("big-integer")
 const Owlet = require('./owlet.js')
 const owletParser = require('./parser/owletParser.js')
 var owlet = new Owlet();
-owlet.evalFile("../examples/sqrt.owlet")
+// owlet.eval(`(begin
+//     (local a 0)
+//     (local t <"apple","bananana">)
+//     (print (+ 9.0 2.8))
+// )`);
+owlet.evalFile("test.owlet")

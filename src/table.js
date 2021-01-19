@@ -8,8 +8,6 @@ const util = require("util");
 
 function _Table() {
   this.hashes = {};
-  this.__keys__ = [];
-  this.__values__ = [];
 }
 
 

@@ -1,6 +1,6 @@
 /**
  * This module implements the arbitrary-precision rational numbers 
- * SCRAPPED, todo: remade on for Version 1.0
+ * (SCRAPPED, todo: remade on for Version 1.0) This is old
  */
 
 const int = require("./int.js");

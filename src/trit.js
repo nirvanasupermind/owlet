@@ -1,6 +1,9 @@
 const quit = require('./quit.js')
 const BigInteger = require("big-integer")
 
+Object.prototype._toString = function () {
+    return this.toString();
+}
 
 //util
 Object.prototype.clone = function () {
@@ -19,9 +22,9 @@ Object.prototype.clone = function () {
 function _Trit(ch) {
     var a = ch;
     if (a instanceof _Trit) {
-        Object.assign(this,a);
-    } else if(typeof a === "boolean") {
-        if(a) {
+        Object.assign(this, a);
+    } else if (typeof a === "boolean") {
+        if (a) {
             this.ch = "1"
         } else {
             this.ch = "N"
@@ -77,14 +80,11 @@ _Trit.prototype.not = function () {
 _Trit.prototype.and = function (that) {
     //Casting
     that = new _Trit(that);
-
     var result = "N";
     if (this.ch === "1" && that.ch === "1") {
         result = "1";
-    }
-
-    if (this.ch === "0" || that.ch === "0") {	// UNKNOWN
-        result = "0";
+    } else if (this.ch === "0" || that.ch === "0") {	// UNKNOWN
+       result = "0";
     }
 
     return new _Trit(result);
@@ -98,12 +98,9 @@ _Trit.prototype.or = function (that) {
 
     if (this.ch === "1" || that.ch === "1") {
         result = "1";
-    }
-
-    if (this.ch === "N" || that.ch === "N") {
+    } else if (this.ch === "N" || that.ch === "N") {
         result = "N";
-    }
-    if (this.ch === "0" || that.ch === "0") {
+    } else if (this.ch === "0" || that.ch === "0") {
         result = "0";
     }
 
@@ -166,6 +163,10 @@ _Trit.prototype.bigIntValue = function () {
     }
 
     return BigInteger(parseFloat(this.ch));
+}
+
+_Trit.prototype.toJSON = function () {
+    return this._toString();
 }
 
 module.exports = { _Trit }
