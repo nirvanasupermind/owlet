@@ -261,7 +261,7 @@ function toTernary(a) {
 }
 
 function isVariableName(exp) {
-    return typeof exp === 'string' && /^[+\-*/<>=a-zA-Z0-9_&\|\^]*$/.test(exp);
+    return typeof exp === 'string' && /^[+\-*/<>=a-zA-Z0-9_&\|\^!]*$/.test(exp);
 }
 
 function falsey(exp) {
@@ -278,100 +278,12 @@ function falsey(exp) {
     ].map(JSON.stringify).indexOf(JSON.stringify(exp)) >= 0 || !exp;
 }
 
-//builtins
-var GlobalEnviroment = {
-    null: new modules.nullType._Null(),
-    true: new modules.trit._Trit("1"),
-    unknown: new modules.trit._Trit("0"),
-    false: new modules.trit._Trit("N"),
-    VERSION: new modules.string._String("0.1"),
-    PI: new modules.float._Float(Math.PI),
-    E: new modules.float._Float(Math.E),
-    PHI: new modules.float._Float((1 + Math.sqrt(5)) / 2),
-    '+'(op1, op2) {
-        return op1.add(op2);
-    },
-    '-'(op1, op2 = null) {
-        if (op2 == null)
-            return op1.neg();
-        return op1.sub(op2);
-    },
-    '*'(op1, op2) {
-        return op1.mul(op2);
-    },
-    '/'(op1, op2) {
-        return op1.div(op2);
-    },
-    '>'(op1, op2) {
-        return new modules.trit._Trit(op1.compareTo(op2) > 0);
-    },
-    '>='(op1, op2) {
-        return new modules.trit._Trit(op1.compareTo(op2) >= 0);
-    },
-    '<'(op1, op2) {
-        return new modules.trit._Trit(op1.compareTo(op2) < 0);
-    },
-    '<='(op1, op2) {
-        return new modules.trit._Trit(op1.compareTo(op2) <= 0);
-    },
-    '='(op1, op2) {
-        return new modules.trit._Trit(op1.compareTo(op2) === 0);
-    },
-    '&'(op1, op2) {
-        return new modules.int._Int(op1.and(op2));
-    },
-    "|"(op1, op2) {
-        return new modules.int._Int(op1.or(op2))
-    },
-    "^"(op1, op2) {
-        return new modules.int._Int(op1.xor(op2));
-    },
-    '&&'(op1, op2) {
-        return new modules.trit._Trit(op1.and(op2));
-    },
-    '||'(op1, op2) {
-        return new modules.trit._Trit(op1.or(op2));
-    },
-    '^^'(op1, op2) {
-        return new modules.trit._Trit(op1.xor(op2));
-    },
-    'print'(...args) {
-        console.log(args.map((e) => e._toString()).join(" "));
-        return new modules.nullType._Null();
-    },
-    'ord'(op1) {
-        return new modules.int._Int(modules.int._Int.convertToBT(modules.int.ord(op1._toString())));
-    },
-    'read'(table, key) {
-        // if (!(table instanceof modules.table._Table)) {
-        //     return toTernary(table[key]);
-        // }
-        return table.get(key);
-    },
-    'write'(table, key, value) {
-        // if (!(table instanceof modules.table._Table)) {
-        //     return table[key] = value;
-        // }
-        return table.set(key, value);
-    },
-    'length'(table) {
-        return Object.getOwnPropertyNames(table.hashes).length;
-    },
-    'keys'(table) {
-        return toTernary(Object.getOwnPropertyNames(table.hashes).map((e) => JSON.parse(e)));
-    },
-    'values'(table) {
-      return toTernary(Object.getOwnPropertyNames(table.hashes).map((e) => table.get(JSON.parse(e))));
-    }
-};
-
 function removeComments(string) {
     //Takes a string of code, not an actual function.
     return string.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').trim();//Strip comments
 }
 
 
-GlobalEnviroment = new Environment(GlobalEnviroment);
-
+var GlobalEnviroment = Environment.builtins;
 //Export
 module.exports = Owlet;

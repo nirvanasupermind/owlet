@@ -10,6 +10,9 @@ const quit = require("./quit.js");
 
 function _Int(s) {
     if (typeof s === "string") {
+        if(s.includes("undefined")) {
+              s = (s || "").toString().replace(/undefined/g,"0");
+        }
         for (var i = 0; i < s.length; i++) {
             if (!"01N".includes(s.charAt(i))) {
                 throw new Error("Invalid trits provided to construct an int: " + JSON.stringify(s));
@@ -28,7 +31,7 @@ function _Int(s) {
         s = s.join("");
     }
 
-    s = (s || "").toString();
+    s = (s || "").toString().replace(/undefined/g,"0");
 
 
     var i = 0;
@@ -104,8 +107,10 @@ _Int.bigToBT = function (n) {
         output = (rem == 0 ? '0' :
             (rem == 1) ? '1' : 'N') + output;
     }
+
     return output;
 }
+
 /**
  * Converts integer to native number
  */
@@ -404,61 +409,9 @@ function ord(string) {
 }
 
 function longDivision(number, divisor) {
-    if (divisor.value === '0')
-        throw new Error('Division by zero')
-
-    if (number.compareTo(divisor) < 0 && number.value.charAt(0) !== "N" && divisor.value.charAt(0) !== "N") {
-        return new _Int(0);
-    }
-
-    if (number.compareTo(new _Int('0')) < 0 && divisor.compareTo(new _Int('0')) >= 0) {
-        return number.neg().div(divisor).neg();
-    }
-
-
-    if (number.compareTo(new _Int('0')) >= 0 && divisor.compareTo(new _Int('0')) < 0) {
-        return number.div(divisor.neg()).neg();
-    }
-
-    if (number.compareTo(new _Int('0')) < 0 && divisor.compareTo(new _Int('0')) < 0) {
-        return number.neg().div(divisor.neg());
-    }
-
-
-
-
-    number = number.bigIntValue().toString();
-    divisor = divisor.decimalValue();
-
-    //As result can be very large store it in string  
-    var ans = "";
-    //Find prefix of number that is larger than divisor.  
-    var idx = 0;
-    var temp = ord(number[idx]) - ord('0');
-    while (temp < divisor) {
-        temp = (temp * 10 + ord(number[idx + 1]) - ord('0'));
-        idx += 1;
-    }
-    idx += 1;
-
-    //Repeatedly divide divisor with temp. After every division, update temp to 
-    //include one more digit.  
-    while (number.length > idx) {
-        //Store result in answer i.e. temp / divisor  
-        ans += String.fromCharCode((temp / divisor) + ord('0'));
-        //Take next digit of number 
-        temp = ((temp % divisor) * 10 + ord(number[idx]) - ord('0'));
-        idx += 1;
-    }
-
-    ans += String.fromCharCode((temp / divisor) + ord('0'));
-
-    //If divisor is greater than number  
-    if (ans.length === 0) {
-        return "0";
-    }
-    //else return ans  
-    return new _Int(_Int.bigToBT(ans));
+    number = number.bigIntValue();
+    divisor = divisor.bigIntValue();
+    return new _Int(_Int.bigToBT(number.divide(divisor)))
 }
 
 _Int.prototype.div = function (that) {
@@ -466,6 +419,28 @@ _Int.prototype.div = function (that) {
 }
 
 
+/**
+ * Modulo
+ */
+
+_Int.prototype.mod = function (that) {
+    that = new _Int(that);
+    //Deal with negatives
+    if (that.value.charAt(0) === "N") {
+        return this.mod(that.neg());
+    } else if (this.value.charAt(0) === "N") {
+        return this.neg().mod(that).neg();
+    } else {
+        //Main case
+        return this.sub(that.mul(this.div(that)))
+        // var result = this;
+        // while (result.compareTo(that) >= 0) {
+        //     result = result.sub(that);
+        // }
+
+        // return result;
+    }
+}
 /**
  * Equality
  */

@@ -1,0 +1,32 @@
+/*
+This example computes the square root of a float using Newtons method
+Expected output: 
+*/
+
+(begin
+    (local A 0.180450221124)
+    (local B 1.16863995529)
+
+    (def sqrt (x) (begin
+        (local xn x)
+        (local i 0.0)
+        //Newton iteration
+        (while (< i 60.0)
+            (begin
+                (set i (+ i 1.0))
+                (local t1 xn)
+                (local t2 (- (* xn xn) x))
+                (set t2 (/ t2 (+ xn xn)))
+                (set xn (- xn t2))
+            )
+        )
+        xn
+    ))
+
+
+    (print (sqrt 10.0))
+
+
+    
+
+)

@@ -2,5 +2,5 @@
    (def lastTrit (n) (begin
       (& n 1)
    ))
-   (print (lastTrit 1000000000000000001)) //=> 1
+   (print (* 2.0 5.5)) //=> 1
 )

@@ -166,7 +166,7 @@ const lexRules = [[/^\(/, function() { return "'('"; }],
 [/^"[^"]*"/, function() { return 'STRING' }],
 [/^\d+\b(?!\.)|\b0[zZ][01N]+\b/, function() { return 'INT' }],
 [/^[+-]?([0-9]*[.])[0-9]+/, function() { return 'FLOAT' }],
-[/^[\w\-+*=<>\/&\|\^]+/, function() { return 'SYMBOL'  }],
+[/^[\w\-+*=<>\/&\|\^!]+/, function() { return 'SYMBOL'  }],
 [/^\{((.+?)(.+?))*\}|(?=\{)([^:]|,\s*)*\}/, function() { return 'TABLE' }]];
 const lexRulesByConditions = {"INITIAL":[0,1,2,3,4,5,6,7]};
 
