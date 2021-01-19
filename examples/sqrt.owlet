@@ -1,7 +1,5 @@
-/*
-This example computes the square root of a float using Newtons method
-Expected output: 
-*/
+//This example computes the square root of a float using Newtons method
+//Expected output: 1.414213562373
 
 (begin
     (local A 0.180450221124)
@@ -24,7 +22,7 @@ Expected output:
     ))
 
 
-    (print (sqrt 10.0))
+    (print (sqrt 2.0))
 
 
     
