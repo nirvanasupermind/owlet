@@ -27,12 +27,15 @@ Owlet uses Lisp-style S-expressions in it's syntax. This means that all expressi
 Owlet is a weakly-typed language, which means that variables are not bound to a specific data type. 
 
 ## 1.1 Supported Types
-Owlet v0.1 supports the following types:
+Owlet v0.2 supports the following types:
 ```
     Trit
     Int
     Float
+    Rat
+    Table
+    Tuple
     Null
 ```
 
-In v0.1 new types can't be added. [Functions](#2-functions-and-functional-programming) are represented by a JavaScript object rather than a data type.
+In v0.2 new types can't be added. [Functions](#2-functions-and-functional-programming) are represented by a JavaScript object rather than a data type.

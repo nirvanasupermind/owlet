@@ -27,6 +27,8 @@ function _Int(s) {
         return;
     } else if (typeof s === "number") {
         s = _Int.convertToBT(s);
+    } else if(s instanceof BigInteger) {
+        s = _Int.bigToBT(s);
     } else if (Array.isArray(s)) {
         s = s.join("");
     }
@@ -415,7 +417,20 @@ function longDivision(number, divisor) {
 }
 
 _Int.prototype.div = function (that) {
+
+    //I think you know what happens now...
+    if (parseInt(that.toString()) === 0) {
+        quit.quit("divided by 0");
+    }
+
+     //Deal with negatives
+    if (that.value.charAt(0) === "N") {
+        return this.div(that.neg());
+    } else if (this.value.charAt(0) === "N") {
+        return this.neg().div(that).neg();
+    } else {
     return longDivision(this, that);
+    }
 }
 
 
@@ -455,11 +470,7 @@ _Int.prototype.equals = function (that) {
  */
 _Int.prototype.compareTo = function (that) {
     that = new _Int(that);
-    if (this.decimalValue() > that.decimalValue())
-        return 1;
-    else if (this.decimalValue() === that.decimalValue())
-        return 0;
-    return -1;
+    return this.bigIntValue().compareTo(that.bigIntValue());
 }
 
 

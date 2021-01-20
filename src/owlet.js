@@ -2,6 +2,7 @@ const modules = require("./modules.js");
 const assert = require('assert');
 const Environment = require("./environment.js");
 const util = require('util');
+const BigInteger = require('big-integer')
 const owletParser = require('./parser/owletParser.js')
 
 
@@ -39,8 +40,17 @@ class Owlet {
     eval(exp, env = this.global, parse) {
         if (!parse) {
             exp = removeComments(exp);
+            exp = exp.replace(/(\b0[zZ][01N]+\b)/g, function (_, grp) {
+                return new modules.int._Int(grp.slice(2)).toString();
+            });
             exp = owletParser.parse(exp);
         }
+
+        if (typeof exp === "string" && /\d+\b(?!\.)\/\d+\b(?!\.)/g.test(exp)) {
+            var [n, d] = exp.split("/");
+            return new modules.rat._Rat(new modules.int._Int(modules.int._Int.bigToBT(BigInteger(n))), new modules.int._Int(modules.int._Int.bigToBT(BigInteger(d))));
+        }
+
 
         if (typeof exp === "string" && exp.charAt(0) === "{" && exp.slice(-1) === "}") {
             var result = new modules.table._Table();
@@ -285,7 +295,7 @@ function toTernary(a) {
 }
 
 function isVariableName(exp) {
-    return typeof exp === 'string' && /^[+\-*/<>=a-zA-Z0-9_&\|\^!]*$/.test(exp);
+    return typeof exp === 'string' && /^[+\-*/<>=a-zA-Z0-9_&\|\^\%!]*$/.test(exp);
 }
 
 function falsey(exp) {

@@ -31,7 +31,6 @@ function _Float(a) {
         Object.assign(this, a);
     } else if (typeof a === 'number') {
         //Switch gears: The user is requesting conversion from JS number.
-        // console.log(a,scale.decimalValue(),a*scale.decimalValue());
         a = BigInteger(Math.floor(a*scale.decimalValue()));
         this.a = new int._Int(int._Int.bigToBT(a));
     } else {
@@ -39,15 +38,26 @@ function _Float(a) {
     }
 }
 
+/**
+ * Adds two floats
+ */
+
 _Float.prototype.add = function (that) {
     that = new _Float(that);
     return new _Float(this.a.add(that.a));
 }
 
+/**
+ * Subtracts two floats
+ */
 _Float.prototype.sub = function (that) {
     that = new _Float(that);
     return new _Float(this.a.sub(that.a));
 }
+
+/**
+ * Product of two floats
+*/
 
 _Float.prototype.mul = function (that) {
     that = new _Float(that);
@@ -55,11 +65,19 @@ _Float.prototype.mul = function (that) {
 }
 
 
+/**
+ * Quotient of two floats
+*/
 _Float.prototype.div = function (that) {
     that = new _Float(that);
     return new _Float(this.a.mul(scale).div(that.a));
 }
 
+
+
+/**
+ * Modulo
+ */
 
 _Float.prototype.mod = function (that) {
     that = new _Float(that);

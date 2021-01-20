@@ -1,202 +1,202 @@
 /**
  * This module implements the arbitrary-precision rational numbers 
- * (SCRAPPED, todo: remade on for Version 1.0) This is old
  */
 
 const int = require("./int.js");
 const BigInteger = require("big-integer")
-var stack = 0;
+const quit = require('./quit.js')
 
-/**
- * Highest common divisor of two ints
- * @param {*} a 
- * @param {*} b 
- */
-function gcd_rec(a, b) {
-    if (b === 1)
-        return 1;
-    var gcd = BigInteger.gcd(a.bigIntValue(), b.bigIntValue());
-    return new int._Int(int._Int.bigToBT(gcd));
+//helper
+Number.prototype.abs = function () {
+    return Math.abs(this);
+}
+
+//from https://stackoverflow.com/questions/14002113/how-to-simplify-a-decimal-into-the-smallest-possible-fraction
+function getlowestfraction(x0) {
+    var eps = 1.0E-15;
+    var h, h1, h2, k, k1, k2, a, x;
+
+    x = x0;
+    a = Math.floor(x);
+    h1 = 1;
+    k1 = 0;
+    h = a;
+    k = 1;
+
+    while (x - a > eps * k * k) {
+        x = 1 / (x - a);
+        a = Math.floor(x);
+        h2 = h1; h1 = h;
+        k2 = k1; k1 = k;
+        h = h2 + a * h1;
+        k = k2 + a * k1;
+    }
+
+    return [h, k];
 }
 
 
-
-/**
- * Farey algorithm The algorithm is related to the Farey sequence
- * @param {number} x 
- * @param {number} N 
- */
-var farey = function (x, N) {
-    if (x === 0)
-        return [0, 1]
-    if (x > 1) {
-        return [farey(x % 1, N)[0] + Math.floor(x) * farey(x % 1, N)[1], farey(x % 1, N)[1]];
-    }
-    var a = 0, b = 1;
-    var c = 1, d = 1;
-
-    while (b <= N && d <= N) {
-        var mediant = (a + c) / (b + d);
-        if (x === mediant) {
-            if (b + d <= N) {
-                return [a + c, b + d]
-            } else if (d > b) {
-                return [c, d];
-            } else {
-                return [a, b];
-            }
-        } else if (x > mediant) {
-            a = a + c; b = b + d;
-        } else {
-            c = a + c; d = b + d;
-        }
-    }
-
-    if (b > N) {
-        return [c, d]
-    } else {
-        return [a, b];
-    }
-
-}
-
-
-/**
- * Creates a rational number, with numerator and denominator.
- * @param {*} n
- * @param {*} d
- */
 function _Rat(n, d) {
-    if (typeof n === "number" && d == null) {
-        //Switch gears: The user is requesting conversion from native javascript number.
-        var [a, b] = farey(n, 1e4).map((e) => new int._Int(e));
-        this.n = a;
-        this.d = b;
-    } else {
-        n = new int._Int(n);
-        d = new int._Int(d);
-        this.n = n.div(gcd_rec(n, d));
-        this.d = d.div(gcd_rec(n, d));
+
+
+    //I think you know what happens now...
+    if (typeof d !== 'undefined' && parseInt(d.toString()) === 0) {
+        quit.quit("divided by 0");
     }
+
+    //Nested fraction
+    if (typeof n === "number" && typeof d === "number" && (n % 1 !== 0 || d % 1 !== 0)) {
+        n = Math.floor(n)
+        d = Math.floor(d);
+    }
+
+    if (n instanceof _Rat) {
+        Object.assign(this, n
+        );
+    } else if (typeof n === "number" && typeof d === "undefined") {
+        //Switch gears: The user is requesting conversion from JS number.
+        var [h, k] = getlowestfraction(n);
+        this.n = new int._Int(int._Int.convertToBT(h));
+        this.d = new int._Int(int._Int.convertToBT(k));
+
+
+    } else if(n instanceof int._Int && typeof d === "undefined") {
+        this.n = n;
+        this.d = d;
+    } else {
+        var _n = n.abs();
+        var _d = d.abs();
+        //Compute HCF to reduce fractions
+        var hcf = new int._Int(int._Int.bigToBT(BigInteger.gcd(new int._Int(_n).bigIntValue(), new int._Int(_d).bigIntValue())));
+        this.n = new int._Int(n).div(hcf);
+        this.d = new int._Int(d).div(hcf);
+    }
+
 }
 
 /**
-* Converts rational to native number
+ * Converts rat to native number
  */
+
 _Rat.prototype.decimalValue = function () {
     return this.n.decimalValue() / this.d.decimalValue();
 }
 
 /**
+ * Adds two rats
+ */
+
+_Rat.prototype.add = function (that) {
+    that = new _Rat(that);
+    var a = this.n,
+        b = this.d,
+        c = that.n,
+        d = that.d;
+
+    return new _Rat(a.mul(d).add(b.mul(c)), b.mul(d));
+}
+
+
+/**
  * Negation
 */
 _Rat.prototype.neg = function () {
-    return new _Rat(this.n.mul(-1),this.d);
+    return new _Rat(this.n.neg(), this.d);
 }
 
 /**
- * Adds two rational numbers
+ * Reciprocal
  */
-_Rat.prototype.add = function (that) {
-    var a = this.n, b = this.d, c = that.n, d = that.d;
-    var t1 = (a.mul(d).add(b.mul(c)));
-    var t2 = (b.mul(d));
-    return new _Rat(t1,t2);
+_Rat.prototype.rec = function () {
+    return new _Rat(this.d, this.n);
 }
 
 /**
- * Subtracts two rational numbers
+ * Absolute value
+ */
+_Rat.prototype.abs = function () {
+    if (this.compareTo(new _Rat(0)) < 0)
+        return this.neg();
+    return this;
+}
+
+/**
+ * Subtracts two rats
  */
 _Rat.prototype.sub = function (that) {
+    that = new _Rat(that);
     return this.add(that.neg());
 }
 
+
 /**
- * Fractional part of rational number
+ * Product of two rats
+*/
+_Rat.prototype.mul = function (that) {
+    that = new _Rat(that);
+    var a = this.n,
+        b = this.d,
+        c = that.n,
+        d = that.d;
+
+    return new _Rat(a.mul(c), b.mul(d));
+}
+
+/**
+ * Quotient of two rats
+*/
+_Rat.prototype.div = function (that) {
+    return this.mul(that.rec());
+}
+
+
+/**
+ * Round down
  */
 
-_Rat.prototype.fracPart = function() {
-    return new _Rat(this.n.mod(this.d),this.d);
+_Rat.prototype.floor = function () {
+    return new _Rat(this.n.div(this.d),1);
 }
 
-// All the prime numbers under 1,000
-var primeNumbers = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503, 509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601, 607, 613, 617, 619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691, 701, 709, 719, 727, 733, 739, 743, 751, 757, 761, 769, 773, 787, 797, 809, 811, 821, 823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947, 953, 967, 971, 977, 983, 991, 997];
+/**
+ * Modulo
+ */
 
-// Finds all the prime factors of a non-zero integer
-// a = integer
-function primeFactors(a) {
-    var primeFactors = new Array(); 
+_Rat.prototype.mod = function (that) {
+    that = new _Rat(that);
+    var a = this.n,
+        b = this.d,
+        c = that.n,
+        d = that.d;
 
-    // Trial division algorithm
-    for (var i = 0, p = primeNumbers[i]; i < primeNumbers.length && p * p <= a; i++, p = primeNumbers[i]) {
-        while (a % p == 0) {         
-                primeFactors.push(p);
+    var t1 = this;
+    var t2 = new _Rat(a.mul(d),b.mul(c)).floor().mul(that);
+    return t1.sub(t2);
 
-                a /= p;
-        }
-    }
-
-    if (a > 1) {
-        primeFactors.push(a);
-    }
-
-    return primeFactors;
-}
-
-// Converts a fraction to a decimal
-// i = number
-// n = numerator
-// d = denominator
-function fractionToDecimal(n, d) {
-    if(d > 200) {
-        return (n/d).toString();
-    }
-    var pFS = primeFactors(d);
-    for (var i = 0; i < pFS.length; i++) { // Go through each of the denominators prime factors
-
-        if (pFS[i] !== 2 && pFS[i] !== 5) { // We have a repeating decimal
-
-            var output = new Array();
-            var ns = new Array();
-
-            // Let's find the repeating decimal
-            // Repeating decimal algorithm - uses long division
-            for (var i = 0; i < 100; i++) { // For now find 20 spots, ideally this should stop after it finds the repeating decimal
-                // How many times does the denominator go into the numerator evenly
-                var temp2 = parseInt(n / d);
-
-                if (ns[n] === undefined) {
-                    ns[n] = i;
-                } else {
-                    return "Repeating decimal: " + 
-                        output.slice(0, 1).join('') +
-                        '.' +
-                        output.slice(1, ns[n]).join('') +
-                        '[' + output.slice(ns[n]).join('') + ']'
-                    ;
-                }
-
-                output.push(temp2);
-                var n = n % d;
-                n += "0";
-            }           
-            return "Repeating decimal: " + output;
-        }
-    }
-
-    // Terminating decimal
-    return "Terminating decimal: " + n / d;
 }
 
 
+
+/**
+ * Performs a comparison between two numbers. 
+ * If the numbers are equal, it returns 0. If the first number is greater, it returns 1. 
+ * If the first number is lesser, it returns -1.
+ */
+_Rat.prototype.compareTo = function (that) {
+    //Make them same denom
+    var n1 = this.n.mul(that.d);
+    var n2 = that.n.mul(this.d);
+    return n1.compareTo(n2);
+}
 
 
 _Rat.prototype.toString = function () {
-    var intPart = this.n.div(this.d).toString();
-    var fracPart = fractionToDecimal(this.fracPart().n,this.fracPart().d).split("0.").pop();
-
-    return intPart+"."+fracPart;
-    
+    return this.n + "/" + this.d;
 }
+
+
+
+_Rat.prototype.toJSON = _Rat.prototype.toString;
+
 
 module.exports = { _Rat }

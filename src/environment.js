@@ -64,7 +64,7 @@ Environment.builtins = {
     true: new modules.trit._Trit("1"),
     unknown: new modules.trit._Trit("0"),
     false: new modules.trit._Trit("N"),
-    VERSION: new modules.string._String("0.1"),
+    VERSION: new modules.string._String("0.2"),
     PI: new modules.float._Float(Math.PI),
     E: new modules.float._Float(Math.E),
     PHI: new modules.float._Float((1 + Math.sqrt(5)) / 2),
@@ -81,6 +81,9 @@ Environment.builtins = {
     },
     '/'(op1, op2) {
         return op1.div(op2);
+    },
+    '%'(op1,op2) {
+        return op1.mod(op2);
     },
     '>'(op1, op2) {
         return new modules.trit._Trit(op1.compareTo(op2) > 0);
