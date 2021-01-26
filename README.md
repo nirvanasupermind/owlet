@@ -23,7 +23,7 @@ For more examples see the `examples` folder.
 A **ternary computer** (also called trinary computer) is a computer that uses ternary logic (three possible values) instead of the more popular binary system ("Base 2") in its calculations. The dialect of ternary (balanced ternary) used in owlet has digits for {-1,0,1}. Yes, this means EVERY number is signed. owlet is a high-level implementation of a ternary computer,minus the CPU and RAM. This allows it to be used effectively as a library for other applications and ternary computers that require heavyweight computations.
 
 # Implementation 
-The v0.2 implementation of Owlet is written in JavaScript, and recursively evaluates the expression. It has multiple files to deal with each ternary data type such as ints and floats. The language implementation is quite small and simple compared to other weakly typed languages. Since the syntax is based on S-expression, the parser can be very small.
+The implementation of Owlet is written in JavaScript, and recursively evaluates the expression. It has multiple files to deal with each ternary data type such as ints and floats. The language implementation is quite small and simple compared to other weakly typed languages. Since the syntax is based on S-expression, the parser can be very small.
 
 # API
 An overview of the syntax can be found in [API.md](API.md). 
