@@ -6,6 +6,9 @@ const int = require("./int.js");
 const BigInteger = require("big-integer")
 const quit = require('./quit.js')
 
+String.prototype.abs = function() {
+    return new int._Int(int._Int.convertToBT(this)).abs();
+}
 //helper
 Number.prototype.abs = function () {
     return Math.abs(this);

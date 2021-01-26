@@ -4,11 +4,20 @@ const Environment = require("./environment.js");
 const util = require('util');
 const BigInteger = require('big-integer')
 const owletParser = require('./parser/owletParser.js')
+const Transformer = require('./transformer.js')
 
-
-
+var stack = 0;
 Function.prototype._toString = function () {
-    return "[built-in function: " + this.name + "]"
+    return "[Function: " + this.name + "]"
+}
+
+function tableToTuple(table) {
+    var hashes = {};
+    for (var i = 0; i < Object.getOwnPropertyNames(table.hashes).length; i++) {
+        var prop = Object.getOwnPropertyNames(table.hashes)[i];
+        hashes[JSON.parse(prop)] = table.hashes[prop];
+    }
+    return new modules.tuple._Tuple(...Object.assign([], hashes));
 }
 
 
@@ -27,8 +36,9 @@ class Owlet {
     // }
 
 
-    constructor(global = GlobalEnviroment) {
+    constructor(global = GlobalEnvironment) {
         this.global = global;
+        this._transformer = new Transformer();
     }
 
 
@@ -43,13 +53,12 @@ class Owlet {
             exp = exp.replace(/(\b0[zZ][01N]+\b)/g, function (_, grp) {
                 return new modules.int._Int(grp.slice(2)).toString();
             });
+
             exp = owletParser.parse(exp);
         }
 
-        if (typeof exp === "string" && /\d+\b(?!\.)\/\d+\b(?!\.)/g.test(exp)) {
-            var [n, d] = exp.split("/");
-            return new modules.rat._Rat(new modules.int._Int(modules.int._Int.bigToBT(BigInteger(n))), new modules.int._Int(modules.int._Int.bigToBT(BigInteger(d))));
-        }
+
+
 
 
         if (typeof exp === "string" && exp.charAt(0) === "{" && exp.slice(-1) === "}") {
@@ -70,15 +79,9 @@ class Owlet {
         }
 
         if (typeof exp === "string" && exp.charAt(0) === "<" && exp.slice(-1) === ">") {
-            var result = [];
-            if (exp === "<>") { } else {
-                var els = exp.slice(1, -1).split(",");
-                for (var i = 0; i < els.length; i++) {
-                    result.push(this.eval(els[i], env));
-                }
-            }
+            var exp2 = "{" + exp.slice(1, -1) + "}";
+            return tableToTuple(this.eval(exp2, env));
 
-            return new modules.tuple._Tuple(...result);
         }
 
 
@@ -102,13 +105,23 @@ class Owlet {
 
         if (exp[0] === 'global') {
             const [_, name, value] = exp;
-            return this.global.define(name, this.eval(value, this.global));
+            return this.global.define(name, this.eval(value, env, true));
         }
 
 
         if (exp[0] === 'set') {
-            const [_, name, value] = exp;
-            return env.assign(name, this.eval(value, env, true));
+            const [_, ref, value] = exp;
+            //Assignment to a property:
+            if(ref[0] === 'prop') {
+                const [_tag, instance, propName] = ref;
+                const instanceEnv = this.eval(instance,env);
+                if(instanceEnv instanceof modules.table._Table) {
+                    return instanceEnv.get(propName, this.eval(value,env,true))
+                } else {
+                    return instanceEnv.define(propName, this.eval(value,env,true))
+                }
+            }
+            return env.assign(ref, this.eval(value, env, true));
         }
 
 
@@ -121,6 +134,13 @@ class Owlet {
             return this._evalBlock(exp, blockEnv);
         }
 
+        stack++;
+
+        if (typeof exp === "string" && exp.match(/^[1-9][0-9]*\/[1-9][0-9]*$/g)) {
+            var [n, d] = exp.split("/");
+            return new modules.rat._Rat(this.eval(n, env), this.eval(d, env));
+        }
+
         //==============
         //If statement
         if (exp[0] === 'if') {
@@ -130,6 +150,62 @@ class Owlet {
             }
             return this.eval(alternate, env, true);
         }
+
+
+
+        if (exp[0] === 'prop') {
+            const [_tag, instance, name] = exp;
+            const instanceEnv = this.eval(instance, env);
+            if (instanceEnv instanceof modules.table._Table || instanceEnv instanceof modules.tuple._Tuple) {
+                return instanceEnv.get(name);
+            }
+
+            return instanceEnv.lookup(name);
+        }
+
+        if (exp[0] === 'class') {
+            const [_tag, name, parent, body] = exp;
+            var parentEnv = this.eval(parent, env, true);
+            if (parentEnv.toString() === "null") {
+                parentEnv = env;
+            }
+
+            const classEnv = new Environment({}, parentEnv);
+
+            this._evalBody(body, classEnv);
+
+
+            //Class is accesible by name
+            return env.define(name, classEnv);
+
+        }
+
+        if (exp[0] === 'new') {
+            const classEnv = this.eval(exp[1], env);
+
+            const instanceEnv = new Environment({}, classEnv);
+
+            const args = exp
+                .slice(2)
+                .map((arg) => this.eval(arg, env, true))
+
+            this._callUserDefinedFunction(
+                classEnv.lookup('constructor'),
+                [instanceEnv, ...args]
+            )
+
+            return instanceEnv;
+        }
+
+
+
+        if (exp[0] === 'switch') {
+            //JIT-transpile to a if declaration
+            const ifExp = this._transformer.transformSwitchToIf(exp);
+            return this.eval(ifExp, env, true);
+        }
+
+
 
         //==============
         //While statement
@@ -151,18 +227,13 @@ class Owlet {
         };
 
 
-        //2. User-defined function:
         if (exp[0] === 'def') {
             const [_tag, name, params, body] = exp;
-            const fn = {
-                params,
-                body,
-                env, // Closure!
-
-            }
 
 
-            return env.define(name, fn);
+            //JIT-transpile to a variable declaration
+            const varExp = this._transformer.transformDefToVarLambda(exp);
+            return this.eval(varExp, env, true);
         }
 
         //2. User-defined lambda:
@@ -188,24 +259,29 @@ class Owlet {
                 return fn(...args);
             }
 
+
             //2. User-defined function:
-            const activationRecord = {};
-            fn.params.forEach((param, index) => {
-                activationRecord[param] = args[index];
-            })
-
-            const activationEnv = new Environment(
-                activationRecord,
-                fn.env //Static scope!
-            );
-
-
-            return this._evalBody(fn.body, activationEnv);
+            return this._callUserDefinedFunction(fn, args);
 
         }
 
 
         modules.quit.quit(`Unimplemented: ${JSON.stringify(exp)}`);
+    }
+
+    _callUserDefinedFunction(fn, args) {
+        const activationRecord = {};
+        fn.params.forEach((param, index) => {
+            activationRecord[param] = args[index];
+        })
+
+        const activationEnv = new Environment(
+            activationRecord,
+            fn.env //Static scope!
+        );
+
+
+        return this._evalBody(fn.body, activationEnv);
     }
 
     evalFile(url, env = this.global) {
@@ -252,7 +328,7 @@ function isInt(exp) {
 }
 
 function isFloat(exp) {
-    return exp instanceof modules.float._Float;
+    return exp instanceof modules.num._Num;
 }
 
 function isString(exp) {
@@ -279,7 +355,7 @@ function toTernary(a) {
         if (a % 1 === 0) {
             return new modules.int._Int(modules.int._Int.convertToBT(a));
         }
-        return new modules.float._Float(parseFloat(a));
+        return new modules.num._Num(parseFloat(a));
     } else if (typeof a === "boolean") {
         return new modules.trit._Trit(a);
     } else if (a.constructor.name === "Object" || a.constructor.name === "Array") {
@@ -312,6 +388,105 @@ function removeComments(string) {
 }
 
 
-var GlobalEnviroment = Environment.builtins;
+var GlobalEnvironment = {
+    null: new modules.nullType._Null(),
+    true: new modules.trit._Trit("1"),
+    unknown: new modules.trit._Trit("0"),
+    false: new modules.trit._Trit("N"),
+    PI: new modules.num._Num(Math.PI),
+    E: new modules.num._Num(Math.E),
+    PHI: new modules.num._Num((1 + Math.sqrt(5)) / 2),
+    '+'(op1, op2) {
+        return op1.add(op2);
+    },
+    '-'(op1, op2 = null) {
+        if (op2 == null)
+            return op1.neg();
+        return op1.sub(op2);
+    },
+    '*'(op1, op2) {
+        return op1.mul(op2);
+    },
+    '/'(op1, op2) {
+        return op1.div(op2);
+    },
+    '%'(op1, op2) {
+        return op1.mod(op2);
+    },
+    '>'(op1, op2) {
+        return new modules.trit._Trit(op1.compareTo(op2) > 0);
+    },
+    '>='(op1, op2) {
+        return new modules.trit._Trit(op1.compareTo(op2) >= 0);
+    },
+    '<'(op1, op2) {
+        return new modules.trit._Trit(op1.compareTo(op2) < 0);
+    },
+    '<='(op1, op2) {
+        return new modules.trit._Trit(op1.compareTo(op2) <= 0);
+    },
+    '='(op1, op2) {
+        return new modules.trit._Trit(JSON.stringify(op1) == JSON.stringify(op2));
+    },
+    '&'(op1, op2) {
+        return new modules.int._Int(op1.and(op2));
+    },
+    "|"(op1, op2) {
+        return new modules.int._Int(op1.or(op2))
+    },
+    "^"(op1, op2) {
+        return new modules.int._Int(op1.xor(op2));
+    },
+    '!'(op1) {
+        return op1.not();
+    },
+    '&&'(op1, op2) {
+        return new modules.trit._Trit(op1.and(op2));
+    },
+    '||'(op1, op2) {
+        return new modules.trit._Trit(op1.or(op2));
+    },
+    '^^'(op1, op2) {
+        return new modules.trit._Trit(op1.xor(op2));
+    },
+    'print'(...args) {
+        console.log(...args.map((e) => e._toString()));
+        return new modules.nullType._Null();
+    },
+    'ord'(op1) {
+        return new modules.int._Int(modules.int._Int.convertToBT(modules.int.ord(op1._toString())));
+    },
+    'len'(table) {
+        return Object.getOwnPropertyNames(table.hashes).length;
+    },
+    'keys'(table) {
+        return toTernary(Object.getOwnPropertyNames(table.hashes).map((e) => JSON.parse(e)));
+    },
+    'values'(table) {
+        return toTernary(Object.getOwnPropertyNames(table.hashes).map((e) => table.get(JSON.parse(e))));
+    },
+    'abs'(op1) {
+        return op1.abs()
+    },
+    'rat'(op1, op2) {
+        return new modules.rat._Rat(op1, op2);
+    },
+    'rec'(op1) {
+        if (op1 instanceof modules.rat._Rat) {
+            return op1.rec();
+        }
+
+        return new modules.rat._Rat(1, op1);
+    },
+    '++'(op1) {
+        return op1.add(1);
+    },
+    '--'(op1) {
+        return op1.sub(1);
+    }
+
+}
+
+GlobalEnvironment = new Environment(GlobalEnvironment);
 //Export
 module.exports = Owlet;

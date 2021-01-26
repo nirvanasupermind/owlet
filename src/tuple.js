@@ -5,10 +5,6 @@ function _Tuple(...args) {
     )
 }
 
-_Tuple.prototype.set = function (val, idx) {
-    Object.defineProperty(this, "item" + idx, { get: () => val })
-}
-
 _Tuple.prototype.get = function (idx) {
     return (this["item" + idx] === undefined ? new nullType._Null() : this["item" + idx]);
 }

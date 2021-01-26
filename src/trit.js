@@ -1,7 +1,26 @@
 const quit = require('./quit.js')
 const BigInteger = require("big-integer")
+var getCircularReplacer = () => {
+  const seen = new WeakSet();
+  return (key, value) => {
+    if (typeof value === "object" && value !== null) {
+      if (seen.has(value)) {
+        return;
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+};
+
 
 Object.prototype._toString = function () {
+    if(this.hasOwnProperty("parent") && this.parent.hasOwnProperty("record") && this.parent.record.hasOwnProperty("constructor")) {
+        return "[Instance: "+JSON.stringify(this.record)+"]";
+    }
+    if(this.toString().includes("Object]")) {
+        return JSON.stringify(this, getCircularReplacer());
+    }
     return this.toString();
 }
 

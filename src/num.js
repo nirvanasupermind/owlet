@@ -26,8 +26,8 @@ if (!String.prototype.padStart) {
  * @param {*} x 
  * @param {*} s 
  */
-function _Float(a) {
-    if (a instanceof _Float) {
+function _Num(a) {
+    if (a instanceof _Num) {
         Object.assign(this, a);
     } else if (typeof a === 'number') {
         //Switch gears: The user is requesting conversion from JS number.
@@ -39,38 +39,38 @@ function _Float(a) {
 }
 
 /**
- * Adds two floats
+ * Adds two nums
  */
 
-_Float.prototype.add = function (that) {
-    that = new _Float(that);
-    return new _Float(this.a.add(that.a));
+_Num.prototype.add = function (that) {
+    that = new _Num(that);
+    return new _Num(this.a.add(that.a));
 }
 
 /**
- * Subtracts two floats
+ * Subtracts two nums
  */
-_Float.prototype.sub = function (that) {
-    that = new _Float(that);
-    return new _Float(this.a.sub(that.a));
+_Num.prototype.sub = function (that) {
+    that = new _Num(that);
+    return new _Num(this.a.sub(that.a));
 }
 
 /**
- * Product of two floats
+ * Product of two nums
 */
 
-_Float.prototype.mul = function (that) {
-    that = new _Float(that);
-    return new _Float(this.a.mul(that.a).div(scale));
+_Num.prototype.mul = function (that) {
+    that = new _Num(that);
+    return new _Num(this.a.mul(that.a).div(scale));
 }
 
 
 /**
- * Quotient of two floats
+ * Quotient of two nums
 */
-_Float.prototype.div = function (that) {
-    that = new _Float(that);
-    return new _Float(this.a.mul(scale).div(that.a));
+_Num.prototype.div = function (that) {
+    that = new _Num(that);
+    return new _Num(this.a.mul(scale).div(that.a));
 }
 
 
@@ -79,22 +79,22 @@ _Float.prototype.div = function (that) {
  * Modulo
  */
 
-_Float.prototype.mod = function (that) {
-    that = new _Float(that);
+_Num.prototype.mod = function (that) {
+    that = new _Num(that);
 
-    return new _Float(this.a.mod(that.a));
+    return new _Num(this.a.mod(that.a));
 }
 
 
-_Float.prototype.decimalValue = function () {
+_Num.prototype.decimalValue = function () {
     return this.a.decimalValue() / scale.decimalValue();
 }
 
-_Float.prototype.bigIntValue = function () {
+_Num.prototype.bigIntValue = function () {
     return this.a.bigIntValue().divide(scale.bigIntValue());
 }
 
-_Float.prototype.compareTo = function (that) {
+_Num.prototype.compareTo = function (that) {
     if (this.decimalValue() > that.decimalValue())
         return 1;
     else if (this.decimalValue() === that.decimalValue())
@@ -103,12 +103,12 @@ _Float.prototype.compareTo = function (that) {
 }
 
 
-_Float.prototype.neg =  function() {
+_Num.prototype.neg =  function() {
     return this.mul(-1);
 }
 
-_Float.prototype.abs = function () {
-    if (this.compareTo(new _Float(0)) < 0)
+_Num.prototype.abs = function () {
+    if (this.compareTo(new _Num(0)) < 0)
         return this.neg();
     return this;
 }
@@ -121,10 +121,10 @@ function digits(x) {
     return result;
 }
 
-_Float.prototype.toJSON = function() {
+_Num.prototype.toJSON = function() {
     return this.toString();
 }
-_Float.prototype.toString = function () {
+_Num.prototype.toString = function () {
     var intPart = this.bigIntValue().toString();
     var fracPart = (digits(this.mod(1).a.bigIntValue()) || "0").split("-").pop();
     return intPart + "." + fracPart;
@@ -133,4 +133,4 @@ _Float.prototype.toString = function () {
 
 
 //Export
-module.exports = { _Float, scale, digits }
+module.exports = { _Num, scale, digits }

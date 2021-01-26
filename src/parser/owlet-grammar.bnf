@@ -9,11 +9,11 @@
 
 \"[^"]*\" return 'STRING'
 
-\d+\b(?!\.)\/\d+\b(?!\.) return 'RAT'
+[1-9][0-9]*\/[1-9][0-9]* return 'RAT'
 
-\d+\b(?!\.) return 'INT'
+\d+\b(?![\.\/]) return 'INT'
 
-[+-]?([0-9]*[.])[0-9]+ return 'FLOAT'
+[+-]?([0-9]*[.])[0-9]+ return 'NUM'
 
 [\w\-+*=/&\|\^!<>\%]+ return 'SYMBOL' 
 
@@ -29,14 +29,15 @@ Exp
     ;
     
 Atom 
-    : INT {
+    : RAT
+    | INT {
         const modules = require('../modules.js');
         const BigInteger = require('big-integer')
         $$ = new modules.int._Int(modules.int._Int.bigToBT(BigInteger($1)))
     }
-    | FLOAT {
+    | NUM {
         const modules = require('../modules.js');
-        $$ = new modules.float._Float(parseFloat($1));
+        $$ = new modules.num._Num(parseFloat($1));
     }
     | STRING {
         const modules = require('../modules.js');
@@ -44,7 +45,6 @@ Atom
     }
     | TABLE
     | TUPLE
-    | RAT
     | SYMBOL 
     ;
 
