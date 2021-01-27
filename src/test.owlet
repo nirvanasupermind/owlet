@@ -1,4 +1,4 @@
 (begin
-    (local fib (import "../examples/fib.owlet"))
-    (print ((prop fib "fib") 1))
+    (local a ((prop Math "exp") 2))
+    (print a)
 )

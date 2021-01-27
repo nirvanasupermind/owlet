@@ -515,4 +515,3 @@ _Int.max = function (a, b) {
 
 //Export
 module.exports = { _Int, ord }
-

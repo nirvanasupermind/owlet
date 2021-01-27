@@ -153,6 +153,7 @@ _Rat.prototype.mul = function (that) {
  * Quotient of two rats
 */
 _Rat.prototype.div = function (that) {
+    that = new _Rat(that);
     return this.mul(that.rec());
 }
 
@@ -190,6 +191,7 @@ _Rat.prototype.mod = function (that) {
  * If the first number is lesser, it returns -1.
  */
 _Rat.prototype.compareTo = function (that) {
+    that = new _Rat(that);
     //Make them same denom
     var n1 = this.n.mul(that.d);
     var n2 = that.n.mul(this.d);

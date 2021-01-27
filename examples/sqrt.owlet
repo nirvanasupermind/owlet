@@ -1,4 +1,5 @@
-//This example computes the square root of a float using Newton iteration
+//This example computes the square root of a num using Newton iteration
+//This is also the algorithm used in Math.sqrt
 //Expected output: 1.414213562373
 
 (begin
@@ -6,7 +7,7 @@
         (local xn x)
         (local i 0.0)
         //Newton iteration
-        (while (< i 60.0)
+        (while (< i 100.0)
             (begin
                 (set i (+ i 1.0))
                 (local t1 xn)
