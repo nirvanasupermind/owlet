@@ -73,6 +73,10 @@ function _Rat(n, d) {
         var hcf = new int._Int(int._Int.bigToBT(BigInteger.gcd(new int._Int(_n).bigIntValue(), new int._Int(_d).bigIntValue())));
         this.n = new int._Int(n).div(hcf);
         this.d = new int._Int(d).div(hcf);
+        if(this.d.compareTo(0) < 0) {
+            this.n = this.n.neg();
+            this.d = this.d.neg();
+        }
     }
 
 }
@@ -200,6 +204,4 @@ _Rat.prototype.toString = function () {
 
 
 _Rat.prototype.toJSON = _Rat.prototype.toString;
-
-
 module.exports = { _Rat }

@@ -1,4 +1,4 @@
-//This example implemenets split-complex number arithmetic in Owlet using tables.
+//This example implemenets split-complex number arithmetic in Owlet using classes.
 //split-complex numbers are the same as complex numbers but with i²=-1 being replaced by j²=+1.
 //Expected output: {"\"a\"":"2.0","\"b\"":"0.0"}
 (begin

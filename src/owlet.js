@@ -5,12 +5,39 @@ const util = require('util');
 const BigInteger = require('big-integer')
 const owletParser = require('./parser/owletParser.js')
 const Transformer = require('./transformer.js')
+const fs = require('fs');
+const path = require('path');
 
 var stack = 0;
+var toInt2 = () => GlobalEnvironment.lookup("int");
 Function.prototype._toString = function () {
-    return "[Function: " + this.name + "]"
+    if (this.name === "") {
+        return "<built-in function>";
+    }
+    return "<built-in function " + this.name + ">";
 }
 
+function makeid(length) {
+   var result           = '';
+   var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+   var charactersLength = characters.length;
+   for ( var i = 0; i < length; i++ ) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+   }
+   return result;
+}
+
+
+
+function toInt(x, b = new modules.int._Int(10)) {
+    var flipflag = Math.sign(parseFloat(x))
+    var a = x.replace(/[/-]/g, '')
+    return new modules.int._Int(modules.int._Int.bigToBT(BigInteger(a, b.bigIntValue()))).mul(flipflag);
+}
+
+function types(x) {
+    return x.map((e) => (e.constructor.name.charAt(0) === "_") ? e.constructor.name.substring(1).toLowerCase() : e.constructor.name.toLowerCase()) + "";
+}
 function tableToTuple(table) {
     var hashes = {};
     for (var i = 0; i < Object.getOwnPropertyNames(table.hashes).length; i++) {
@@ -41,6 +68,14 @@ class Owlet {
         this._transformer = new Transformer();
     }
 
+    _preProcess(exp) {
+        exp = removeComments(exp);
+        exp = exp.replace(/(\b0[zZ][01N]+\b)/g, function (_, grp) {
+            return new modules.int._Int(grp.slice(2)).toString();
+        });
+        return exp;
+    }
+
 
     /**
      * Evaluates an intermediate S-expression within the given environment.
@@ -49,11 +84,7 @@ class Owlet {
      */
     eval(exp, env = this.global, parse) {
         if (!parse) {
-            exp = removeComments(exp);
-            exp = exp.replace(/(\b0[zZ][01N]+\b)/g, function (_, grp) {
-                return new modules.int._Int(grp.slice(2)).toString();
-            });
-
+            exp = this._preProcess(exp);
             exp = owletParser.parse(exp);
         }
 
@@ -112,13 +143,13 @@ class Owlet {
         if (exp[0] === 'set') {
             const [_, ref, value] = exp;
             //Assignment to a property:
-            if(ref[0] === 'prop') {
+            if (ref[0] === 'prop') {
                 const [_tag, instance, propName] = ref;
-                const instanceEnv = this.eval(instance,env);
-                if(instanceEnv instanceof modules.table._Table) {
-                    return instanceEnv.get(propName, this.eval(value,env,true))
+                const instanceEnv = this.eval(instance, env);
+                if (instanceEnv instanceof modules.table._Table) {
+                    return instanceEnv.set(this.eval(propName, env, true), this.eval(value, env, true))
                 } else {
-                    return instanceEnv.define(propName, this.eval(value,env,true))
+                    return instanceEnv.define(this.eval(propName, env, true), this.eval(value, env, true))
                 }
             }
             return env.assign(ref, this.eval(value, env, true));
@@ -136,7 +167,7 @@ class Owlet {
 
         stack++;
 
-        if (typeof exp === "string" && exp.match(/^[1-9][0-9]*\/[1-9][0-9]*$/g)) {
+        if (typeof exp === "string" && exp.match(/^[+-]?[0-9]+\/[0-9]+$/g)) {
             var [n, d] = exp.split("/");
             return new modules.rat._Rat(this.eval(n, env), this.eval(d, env));
         }
@@ -155,7 +186,7 @@ class Owlet {
 
         if (exp[0] === 'prop') {
             const [_tag, instance, name] = exp;
-            const instanceEnv = this.eval(instance, env);
+            const instanceEnv = this.eval(instance, env, true);
             if (instanceEnv instanceof modules.table._Table || instanceEnv instanceof modules.tuple._Tuple) {
                 return instanceEnv.get(name);
             }
@@ -178,6 +209,11 @@ class Owlet {
             //Class is accesible by name
             return env.define(name, classEnv);
 
+        }
+
+        if (exp[0] === 'super') {
+            const [_tag, className] = exp;
+            return this.eval(className, env).parent;
         }
 
         if (exp[0] === 'new') {
@@ -203,6 +239,21 @@ class Owlet {
             //JIT-transpile to a if declaration
             const ifExp = this._transformer.transformSwitchToIf(exp);
             return this.eval(ifExp, env, true);
+        }
+
+        if (exp[0] === 'module') {
+            const [_tag, name, body] = exp;
+            const moduleEnv = new Environment({}, env);
+            this._evalBody(body, moduleEnv);
+            return env.define(name, moduleEnv);
+        }
+
+        if (exp[0] === 'import') {
+            const [_tag, url] = exp;
+            var moduleSrc = fs.readFileSync(path.join(__dirname, url._toString()), 'utf8')
+            const body = owletParser.parse(this._preProcess(moduleSrc))
+            const moduleExp = ["module", makeid(10), body];
+            return this.eval(moduleExp, this.global, true);
         }
 
 
@@ -259,7 +310,6 @@ class Owlet {
                 return fn(...args);
             }
 
-
             //2. User-defined function:
             return this._callUserDefinedFunction(fn, args);
 
@@ -285,8 +335,6 @@ class Owlet {
     }
 
     evalFile(url, env = this.global) {
-        const fs = require('fs'),
-            path = require('path')
 
         try {
             const data = fs.readFileSync(path.join(__dirname, url), 'utf8')
@@ -376,6 +424,12 @@ function isVariableName(exp) {
 
 function falsey(exp) {
     return [
+        new modules.int._Int("0"),
+        new modules.int._Int("N"),
+        new modules.num._Num(0),
+        new modules.num._Num(1).neg(),
+        new modules.rat._Rat("0", "1"),
+        new modules.rat._Rat("N", "1"),
         new modules.trit._Trit("0"),
         new modules.trit._Trit("N"),
         new modules.nullType._Null()
@@ -397,6 +451,9 @@ var GlobalEnvironment = {
     E: new modules.num._Num(Math.E),
     PHI: new modules.num._Num((1 + Math.sqrt(5)) / 2),
     '+'(op1, op2) {
+        if (op1 instanceof modules.string._String && op2 instanceof modules.string._String) {
+            return op1.concat(op2);
+        }
         return op1.add(op2);
     },
     '-'(op1, op2 = null) {
@@ -457,7 +514,10 @@ var GlobalEnvironment = {
         return new modules.int._Int(modules.int._Int.convertToBT(modules.int.ord(op1._toString())));
     },
     'len'(table) {
-        return Object.getOwnPropertyNames(table.hashes).length;
+        if (table instanceof modules.tuple._Tuple) {
+            return new modules.int._Int(table.toArray().length)
+        }
+        return new modules.int._Int(Object.getOwnPropertyNames(table.hashes).length);
     },
     'keys'(table) {
         return toTernary(Object.getOwnPropertyNames(table.hashes).map((e) => JSON.parse(e)));
@@ -468,8 +528,85 @@ var GlobalEnvironment = {
     'abs'(op1) {
         return op1.abs()
     },
-    'rat'(op1, op2) {
-        return new modules.rat._Rat(op1, op2);
+    'trit'(...args) {
+        if (JSON.stringify(args) === "[]") {
+            return new modules.trit._Trit("N");
+        } else if (args[0].toString() === "unknown") {
+            return new modules.trit._Trit("0");
+        } else {
+            return (falsey(args[0]) ? new modules.trit._Trit("N") : new modules.trit._Trit("1"));
+        }
+    },
+    'int'(...args) {
+        switch (types(args)) {
+            case "": return new modules.int._Int(0);
+            case "int": return args[0];
+            case "num": return args[0].a.div(modules.num.scale);
+            case "rat": return args[0].n.div(args[0].d);
+            case "trit": return new modules.int._Int(args[0].decimalValue())
+            case "string": return toInt(args[0].toString())
+            case "string,int": return toInt(args[0].toString(), args[1])
+            default: modules.quit.quit(`invalid literal for int(): ${args._toString()}`)
+        }
+    },
+    'num'(...args) {
+        switch (types(args)) {
+            case "": return new modules.num._Num(0);
+            case "int": return new modules.num._Num(args[0].div(modules.num.scale));
+            case "num": return args[0];
+            case "rat": return new modules.num._Num(args[0].n.mul(modules.num.scale).div(args[0].d))
+            case "trit": return new modules.num._Num(args[0].decimalValue())
+            case "string": return new modules.num._Num(parseFloat(args[0]))
+            default: modules.quit.quit(`invalid literal for num(): ${args._toString()}`)
+        }
+    },
+    'rat'(...args) {
+        switch (types(args)) {
+            case "": return new modules.rat._Rat(0, 1);
+            case "int": return new modules.rat._Rat(args[0], modules.int._Int.ONE);
+            case "num": return new modules.rat._Rat(args[0].a, modules.num.scale);
+            case "rat": return args[0];
+            case "trit": return new modules.rat._Rat(args[0].decimalValue(), 1);
+            case "string": return (args[0].toString().includes("/") ? new modules.rat._Rat(toInt(args[0].toString().split("/")[0]), toInt(args[0].toString().split("/")[1])) : new modules.rat._Rat(toInt(args[0].toString()), 1))
+            case "tuple": return new modules.rat._Rat(...args[0].toArray())
+            case "int,int": return new modules.rat._Rat(args[0], args[1])
+            default: modules.quit.quit(`invalid literal for rat(): ${args._toString()}`)
+        }
+    },
+    'string'(...args) {
+        return new modules.string._String(args[0]._toString());
+    },
+    'tuple'(...args) {
+        switch (types(args)) {
+            case "tuple": return args[0];
+            case "table": return tableToTuple(args[0]);
+            default: return new modules.tuple._Tuple(...args)
+        }
+    },
+    'table'(...args) {
+        switch (types(args)) {
+            case "": return new modules.table._Table();
+            case "tuple":
+                var result = new modules.table._Table()
+                for (var i = 0; i < args[0].toArray().length; i++) {
+                    result.set(new modules.int._Int(i), args[0].toArray()[i]);
+                }
+                return result;
+            case "table": return args[0];
+            case "tuple,tuple":
+                var result = new modules.table._Table()
+                for (var i = 0; i < args[0].toArray().length; i++) {
+                    result.set(args[0].toArray()[i], args[1].toArray()[i]);
+                }
+                return result;
+            default:
+                var result = new modules.table._Table()
+                for (var i = 0; i < args.length; i++) {
+                    result.set(new modules.int._Int(i), args[i]);
+                }
+                return result;
+
+        }
     },
     'rec'(op1) {
         if (op1 instanceof modules.rat._Rat) {
@@ -477,12 +614,6 @@ var GlobalEnvironment = {
         }
 
         return new modules.rat._Rat(1, op1);
-    },
-    '++'(op1) {
-        return op1.add(1);
-    },
-    '--'(op1) {
-        return op1.sub(1);
     }
 
 }

@@ -5,13 +5,13 @@
 
 \s+ /* skip whitespace */
 
-\<(.|\,\s*)*\> return 'TUPLE'
+\<(.*?)\> return 'TUPLE'
 
 \"[^"]*\" return 'STRING'
 
-[1-9][0-9]*\/[1-9][0-9]* return 'RAT'
+[+-]?[0-9]+\/[0-9]+ return 'RAT'
 
-\d+\b(?![\.\/]) return 'INT'
+[+-]?\d+\b(?![\.\/]) return 'INT'
 
 [+-]?([0-9]*[.])[0-9]+ return 'NUM'
 
@@ -33,7 +33,9 @@ Atom
     | INT {
         const modules = require('../modules.js');
         const BigInteger = require('big-integer')
-        $$ = new modules.int._Int(modules.int._Int.bigToBT(BigInteger($1)))
+        var flipflag = Math.sign(parseFloat($1))
+        var a = $1.replace(/[/-]/g, '')
+        $$ = new modules.int._Int(modules.int._Int.bigToBT(BigInteger(a))).mul(flipflag)
     }
     | NUM {
         const modules = require('../modules.js');

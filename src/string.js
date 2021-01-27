@@ -371,11 +371,12 @@ _String.prototype.charAt = function (i) {
 
 _String.prototype.concat = function (that) {
     var result = new table._Table();
-    for (var i = int._Int.ZERO; i < this.length(); i = i.add(1)) {
+    for (var i = int._Int.ZERO; i.compareTo(this.length()) < 0; i = i.add(1)) {
         result.set(i, this.value.get(i));
     }
 
-    for (var j = int._Int.ZERO; j < that.length(); j = j.add(1)) {
+
+    for (var j = int._Int.ZERO; j.compareTo(that.length()) < 0; j = j.add(1)) {
         result.set(j.add(this.length()), that.value.get(j));
     }
 
@@ -421,9 +422,9 @@ _String.prototype.compareTo = function (that) {
     return this.toString().localeCompare(that.toString());
 }
 
-_String.prototype._toString = function() {
-    return "\""+this.toString()+"\""
-}
+// _String.prototype._toString = function() {
+//     return "\""+this.toString()+"\""
+// }
 
 
 

@@ -30,7 +30,7 @@ _Tuple.prototype.toArray = function() {
 }
 
 _Tuple.prototype.toString = function() {
-    return "<"+(this.toArray().map((e) => e._toString()).join(","))+">";
+    return "<"+(this.toArray().map((e) => JSON.stringify(e)).join(","))+">";
 }
 
 _Tuple.prototype.toJSON = function() {

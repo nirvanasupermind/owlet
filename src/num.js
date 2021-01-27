@@ -22,7 +22,7 @@ if (!String.prototype.padStart) {
 }
 
 /**
- * This module defines a decimal number represented using a fixed-point number system. 
+ * This module defines a fractional number represented using a fixed-point number system. 
  * @param {*} x 
  * @param {*} s 
  */
@@ -31,8 +31,10 @@ function _Num(a) {
         Object.assign(this, a);
     } else if (typeof a === 'number') {
         //Switch gears: The user is requesting conversion from JS number.
+        var flipflag = Math.sign(a);
+        a = Math.abs(a);
         a = BigInteger(Math.floor(a*scale.decimalValue()));
-        this.a = new int._Int(int._Int.bigToBT(a));
+        this.a = new int._Int(int._Int.bigToBT(a)).mul(flipflag);
     } else {
         this.a = new int._Int(a);
     }
@@ -125,6 +127,10 @@ _Num.prototype.toJSON = function() {
     return this.toString();
 }
 _Num.prototype.toString = function () {
+    if(Math.abs(this.decimalValue()) <= 1e-7 && Math.abs(this.decimalValue()) > 0) {
+        return this.decimalValue().toString()
+    }
+
     var intPart = this.bigIntValue().toString();
     var fracPart = (digits(this.mod(1).a.bigIntValue()) || "0").split("-").pop();
     return intPart + "." + fracPart;

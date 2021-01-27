@@ -74,7 +74,9 @@ const productions = [[-1,1,(_1) => { __ = _1 }],
 [1,1,(_1) => { 
         const modules = require('../modules.js');
         const BigInteger = require('big-integer')
-        __ = new modules.int._Int(modules.int._Int.bigToBT(BigInteger(_1)))
+        var flipflag = Math.sign(parseFloat(_1))
+        var a = _1.replace(/[/-]/g, '')
+        __ = new modules.int._Int(modules.int._Int.bigToBT(BigInteger(a))).mul(flipflag)
      }],
 [1,1,(_1) => { 
         const modules = require('../modules.js');
@@ -121,10 +123,10 @@ let tokenizer;
 const lexRules = [[/^\(/, function() { return "'('"; }],
 [/^\)/, function() { return "')'"; }],
 [/^\s+/, function() { /* skip whitespace */ }],
-[/^<(.|,\s*)*>/, function() { return 'TUPLE' }],
+[/^<(.*?)>/, function() { return 'TUPLE' }],
 [/^"[^"]*"/, function() { return 'STRING' }],
-[/^[1-9][0-9]*\/[1-9][0-9]*/, function() { return 'RAT' }],
-[/^\d+\b(?![\.\/])/, function() { return 'INT' }],
+[/^[+-]?[0-9]+\/[0-9]+/, function() { return 'RAT' }],
+[/^[+-]?\d+\b(?![\.\/])/, function() { return 'INT' }],
 [/^[+-]?([0-9]*[.])[0-9]+/, function() { return 'NUM' }],
 [/^[\w\-+*=\/&\|\^!<>\%]+/, function() { return 'SYMBOL'  }],
 [/^\{((.+?)(.+?))*\}|(?=\{)([^:]|,\s*)*\}/, function() { return 'TABLE' }]];

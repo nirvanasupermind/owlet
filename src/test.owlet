@@ -1,15 +1,4 @@
 (begin
-   (class Point null (begin
-        (def constructor (this x y) (begin
-            (set (prop this x) x)
-            (set (prop this y) y)
-        ))
-
-        (def calc (this) (begin
-            (+ (prop this x) (prop this y))
-        ))
-   ))
-   (local x (new Point 6 3))
-   (print ((prop x calc) x))
+    (local fib (import "../examples/fib.owlet"))
+    (print ((prop fib "fib") 1))
 )
-
