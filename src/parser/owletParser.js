@@ -80,7 +80,11 @@ const productions = [[-1,1,(_1) => { __ = _1 }],
      }],
 [1,1,(_1) => { 
         const modules = require('../modules.js');
-        __ = new modules.num._Num(parseFloat(_1));
+        if(_1.charAt(0) === "-") {
+            __ = modules.num._Num.parse(_1.slice(1)).neg();
+        } else {
+        __ = modules.num._Num.parse(_1);
+        }
      }],
 [1,1,(_1) => { 
         const modules = require('../modules.js');
@@ -129,7 +133,7 @@ const lexRules = [[/^\(/, function() { return "'('"; }],
 [/^[+-]?\d+\b(?![\.\/])/, function() { return 'INT' }],
 [/^[+-]?([0-9]*[.])[0-9]+/, function() { return 'NUM' }],
 [/^[\w\-+*=\/&\|\^!<>\%]+/, function() { return 'SYMBOL'  }],
-[/^\{((.+?)(.+?))*\}|(?=\{)([^:]|,\s*)*\}/, function() { return 'TABLE' }]];
+[/^\{(.*?)\}/, function() { return 'TABLE' }]];
 const lexRulesByConditions = {"INITIAL":[0,1,2,3,4,5,6,7,8,9]};
 
 const EOF_TOKEN = {

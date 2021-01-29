@@ -17,7 +17,7 @@
 
 [\w\-+*=/&\|\^!<>\%]+ return 'SYMBOL' 
 
-\{((.+?):(.+?))*\}|/\{([^:]|\,\s*)*\} return 'TABLE'
+\{(.*?)\} return 'TABLE'
 
 /lex
 
@@ -39,7 +39,11 @@ Atom
     }
     | NUM {
         const modules = require('../modules.js');
-        $$ = new modules.num._Num(parseFloat($1));
+        if($1.charAt(0) === "-") {
+            $$ = modules.num._Num.parse($1.slice(1)).neg();
+        } else {
+        $$ = modules.num._Num.parse($1);
+        }
     }
     | STRING {
         const modules = require('../modules.js');

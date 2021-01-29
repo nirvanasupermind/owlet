@@ -1,6 +1,6 @@
 {
   "name": "owlet",
-  "version": "0.3.2",
+  "version": "1.0.1",
   "description": "Programming language for ternary computing",
   "main": "src/owlet.js",
   "directories": {
@@ -8,8 +8,8 @@
   },
   "dependencies": {
     "big-integer": "^1.6.48",
-    "syntax-cli": "^0.1.21",
-    "myna-parser": "^2.5.1"
+    "big-js": "^3.1.3",
+    "syntax-cli": "^0.1.21"
   },
   "devDependencies": {},
   "scripts": {

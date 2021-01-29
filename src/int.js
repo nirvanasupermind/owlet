@@ -104,8 +104,9 @@ _Int.bigToBT = function (n) {
         n = n.divide(3);
         if (rem == 2) {
             rem = -1;
-            n++;
+            n = n.add(1);
         }
+
         output = (rem == 0 ? '0' :
             (rem == 1) ? '1' : 'N') + output;
     }
@@ -417,6 +418,7 @@ function longDivision(number, divisor) {
 }
 
 _Int.prototype.div = function (that) {
+    that = new _Int(that);
 
     //I think you know what happens now...
     if (parseInt(that.toString()) === 0) {

@@ -1,4 +1,5 @@
 const nullType = require('./null.js')
+const int = require('./int.js')
 function _Tuple(...args) {
     args.forEach((val, idx) =>
         Object.defineProperty(this, "item" + idx, { get: () => val })
@@ -6,6 +7,11 @@ function _Tuple(...args) {
 }
 
 _Tuple.prototype.get = function (idx) {
+    if(idx instanceof int._Int) {
+        if(idx.value.charAt(0) === "N") {
+            idx = this.length().sub(idx.neg());
+        }
+    }
     return (this["item" + idx] === undefined ? new nullType._Null() : this["item" + idx]);
 }
 
@@ -15,7 +21,7 @@ _Tuple.prototype.length = function () {
         result++;
     }
 
-    return result;
+    return new int._Int(result);
 }
 
 _Tuple.prototype.toArray = function() {

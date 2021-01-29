@@ -1,4 +1,16 @@
 (begin
-    (local a ((prop Math "exp") 2))
+    (class Complex null (begin
+        (def constructor (this x y) (begin
+            (set (prop this "x") x)
+            (set (prop this "y") y)
+        ))
+        
+        (def toString (x) (begin
+            (+ (+ (string (prop x "x")) "+") (+ (string (prop x "y")) "i"))
+        ))
+    ))
+    
+    (local a -1)
     (print a)
 )
+

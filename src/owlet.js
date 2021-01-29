@@ -7,27 +7,61 @@ const owletParser = require('./parser/owletParser.js')
 const Transformer = require('./transformer.js')
 const fs = require('fs');
 const path = require('path');
+const NEWTON_ITERATIONS = 60;
 
-function clone(obj) {
-    if (null == obj || "object" != typeof obj) return obj;
-    var copy = obj.constructor();
-    for (var attr in obj) {
-        if (obj.hasOwnProperty(attr)) copy[attr] = obj[attr];
+
+function printObj(o, name, show = Object.getOwnPropertyNames(o)) {
+    if (show[0] === "*") {
+        show = Object.getOwnPropertyNames(o).filter((e) => !(show.slice(1).includes(e)));
     }
-    return copy;
+
+    var result = "[" + name + "]"
+    var o2 = {};
+    for (var i = 0; i < show.length; i++) {
+        o2[show[i]] = o[show[i]];
+    }
+
+    if (Object.getOwnPropertyNames(o2).length > 0) {
+        result = "{ " + result + " " + JSON.stringify2(o2).slice(1, -1) + " }"
+    }
+
+    return result;
+}
+
+Object.prototype._toString = function () {
+    if (String(this) === "[object Object]") {
+        if (this.hasOwnProperty("record") && this.record.hasOwnProperty("__class__")) {
+            return printObj(this.record, "Class", ["*", "__class__"])
+        } else if (this.hasOwnProperty("parent") && String(this.parent) === "[object Object]" && this.parent.hasOwnProperty("record") && this.parent.record.hasOwnProperty("__class__")) {
+            if (this.parent.record.hasOwnProperty("toString")) {
+                return new Owlet()._callUserDefinedFunction(this.parent.lookup("toString"), [this])._toString();
+            }
+            return printObj(this.record, "Instance")
+        } else if (this.hasOwnProperty("record")) {
+            return printObj(this.record, "Module")
+        } else if (this.hasOwnProperty("params") && this.hasOwnProperty("body")) {
+            return printObj(this, "Function", ["params"]);
+        }
+    }
+
+
+    if (this.toString().includes("Object]")) {
+        return JSON.stringify2(this);
+    }
+
+    return this.toString();
 }
 
 
-var stack = 0;
-var toInt2 = () => GlobalEnvironment.lookup("int");
+// var stack = 0;
 Function.prototype._toString = function () {
     if (this.name === "") {
-        return "<built-in function>";
+        return "[Function]"
     }
-    return "<built-in function " + this.name + ">";
+    return "[Function: " + this.name + "]";
 }
 
-Function.prototype.toJSON = Function.prototype._toString
+Function.prototype.toJSON = Function.prototype._toString;
 
 function makeid(length) {
     var result = '';
@@ -88,9 +122,14 @@ class Owlet {
         exp = exp.replace(/(\b0[zZ][01N]+\b)/g, function (_, grp) {
             return new modules.int._Int(grp.slice(2)).toString();
         });
-        
-        exp = exp.replace(/(\b[0-9]+(\.[0-9]+)?(e[+-]?[0-9]+)\b)/g,function(_,grp) {
-           return modules.num._Num.parse(grp).toString();
+
+        exp = exp.replace(/(\{(.*?)\})/g, function (_, grp) {
+            return owletParser.parse(grp);
+        });
+
+
+        exp = exp.replace(/(\b[0-9]+(\.[0-9]+)?(e[+-]?[0-9]+)\b)/g, function (_, grp) {
+            return modules.num._Num.parse(grp).toString();
         });
 
         return exp;
@@ -142,10 +181,12 @@ class Owlet {
             return exp;
         }
 
-        //Pass (do nothing)
-        if (exp[0] === "pass") {
-            return new modules.nullType._Null();
-        }
+        // //Pass (do nothing)
+        // if (exp[0] === "pass") {
+        //     return new modules.nullType._Null();
+        // }
+
+
 
         //=============
         //Variable define
@@ -185,7 +226,7 @@ class Owlet {
             return this._evalBlock(exp, blockEnv);
         }
 
-        stack++;
+        // stack++;
 
         if (typeof exp === "string" && exp.match(/^[+-]?[0-9]+\/[0-9]+$/g)) {
             var [n, d] = exp.split("/");
@@ -221,7 +262,7 @@ class Owlet {
                 parentEnv = env;
             }
 
-            const classEnv = new Environment({}, parentEnv);
+            const classEnv = new Environment({ "__class__": new modules.nullType._Null() }, parentEnv);
 
             this._evalBody(body, classEnv);
 
@@ -335,7 +376,7 @@ class Owlet {
         }
 
 
-        modules.quit.quit(`Unimplemented: ${JSON.stringify(exp)}`);
+        modules.quit.quit(`Unimplemented: ${JSON.stringify2(exp)}`);
     }
 
     _callUserDefinedFunction(fn, args) {
@@ -378,6 +419,10 @@ class Owlet {
         expressions.forEach(exp => {
             result = this.eval(exp, env, true);
         });
+
+        if (result === undefined) {
+            return new modules.nullType._Null();
+        }
 
         return result;
     }
@@ -460,13 +505,96 @@ function removeComments(string) {
     return string.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').trim();//Strip comments
 }
 
+var intmodulus = 274876858369;
+var seed = new modules.int._Int(+new Date() % intmodulus);
+var modulus = new modules.int._Int(intmodulus);
+//Blum-Blum-Shub generator
+function rand() {
+    seed = seed.mul(seed).mod(modulus);
+    return seed;
+}
 
-var GlobalEnvironment = {
+//Builtins
+var GlobalEnvironment = new Environment({
     null: new modules.nullType._Null(),
     true: new modules.trit._Trit("1"),
     unknown: new modules.trit._Trit("0"),
     false: new modules.trit._Trit("N"),
-    Math: new modules.table._Table(),
+    Math: new Environment({
+        PI: new modules.num._Num(Math.PI),
+        E: new modules.num._Num(Math.E),
+        sin: function sin(a) {
+            if (!(a instanceof modules.num._Num)) {
+                //Cast
+                return GlobalEnvironment.lookup(type(a))(sin(GlobalEnvironment.lookup("num")(a)));
+            } else {
+                a = a.mod(GlobalEnvironment.lookup("Math").lookup("PI").mul(2)).sub(1);
+                var pow = (x, y) => (y === 0 ? new modules.num._Num(1) : x.mul(pow(x, y - 1))); //Q&D int power
+                //Taylor series
+                var coefs = [0.8414709848078965, 0.5403023058681398, -0.42073549240394825, -0.09005038431135662, 0.03506129103366235, 0.004502519215567831, -0.0011687097011220786, -0.00010720283846590075, 0.000020869816091465686, 1.4889283120263993e-6, -2.3188684546072984e-7, -1.353571192751272e-8, 1.7567185262176504e-9, 8.676738415072256e-11, -9.652299594602475e-12, -4.1317801976534555e-13, 4.021791497751031e-14, 1.519036837372594e-15, -1.3143109469774612e-16, -4.441628179452029e-18, 3.45871301836174e-19, 1.0575305189171499e-20, -7.486391814635802e-22, -2.089981262682114e-23, 1.3562304012021378e-24, 3.4833021044701907e-26, -2.08650830954175e-27, -4.961968809786596e-29, 2.7599316263779767e-30, 6.110799026830784e-32, -3.172335202733306e-33];
+                var result = new modules.num._Num(0);
+                for (var i = 0; i < coefs.length; i++) {
+                    result = result.add(pow(a, i).mul(new modules.num._Num(coefs[i])));
+                }
+
+                return result;
+
+            }
+        },
+        cos: function cos(a) {
+            if (!(a instanceof modules.num._Num)) {
+                //Cast
+                return GlobalEnvironment.lookup(type(a))(sin(GlobalEnvironment.lookup("num")(a)));
+            } else {
+                a = a.mod(GlobalEnvironment.lookup("Math").lookup("PI").mul(2)).sub(1);
+                var pow = (x, y) => (y === 0 ? new modules.num._Num(1) : x.mul(pow(x, y - 1))); //Q&D int power
+                //Taylor series
+                var coefs = [0.5403023058681398, -0.8414709848078965, -0.2701511529340699, 0.1402451641346494, 0.022512596077839155, -0.007012258206732471, -0.0007504198692613053, 0.00016695852873172549, 0.000013400354808237594, -2.3188684546072986e-6, -1.488928312026399e-7, 2.1080622314611807e-8, 1.1279759939593935e-9, -1.3513219432443465e-10, -6.197670296480184e-12, 6.434866396401649e-13, 2.5823626235334097e-14, -2.36575970455943e-15, -8.439093540958854e-17, 6.91742603672348e-18, 2.2208140897260144e-19, -1.6470061992198763e-20, -4.806956904168864e-22, 3.2549529628851306e-23, 8.708255261175476e-25, -5.424921604808551e-26, -1.3397315786423807e-27, 7.727808553858335e-29, 1.772131717780927e-30, -9.517005608199921e-32, -2.036933008943594e-33];
+                var result = new modules.num._Num(0);
+                for (var i = 0; i < coefs.length; i++) {
+                    result = result.add(pow(a, i).mul(new modules.num._Num(coefs[i])));
+                }
+
+                return result;
+
+            }
+
+        },
+        tan: function tan(a) {
+            if (!(a instanceof modules.num._Num)) {
+                //Cast
+                return GlobalEnvironment.lookup(type(a))(sin(GlobalEnvironment.lookup("num")(a)));
+            } else {
+                a = a.mod(GlobalEnvironment.lookup("Math").lookup("PI"));
+                var sin = GlobalEnvironment.lookup("Math").lookup("sin");
+                var cos = GlobalEnvironment.lookup("Math").lookup("cos");
+                return sin(a).div(cos(a));
+            }
+        },
+        asin: function asin(a) {
+            if (!(a instanceof modules.num._Num)) {
+                //Cast
+                return GlobalEnvironment.lookup(type(a))(sin(GlobalEnvironment.lookup("num")(a)));
+            } else {
+                //Newton iteration
+                var xn = a;
+                var sin = GlobalEnvironment.lookup("Math").lookup("sin");
+                for(var i = 0; i < NEWTON_ITERATIONS; i++) {
+                    var secant = new modules.num._Num(1).div(xn);
+                    xn = xn.sub(sin(xn).sub(a).mul(secant));
+                }
+                
+            }
+        },
+        'abs'(op1) {
+            return op1.abs();
+        },
+        'random'() {
+            var num = rand();
+            return new modules.rat._Rat(num, modulus);
+        }
+
+    }),
     '+'(op1, op2) {
         if (op1 instanceof modules.string._String && op2 instanceof modules.string._String) {
             return op1.concat(op2);
@@ -534,13 +662,39 @@ var GlobalEnvironment = {
         if (table instanceof modules.tuple._Tuple) {
             return new modules.int._Int(table.toArray().length)
         }
+
+        if (table instanceof Environment) {
+            return new modules.int._Int(Object.getOwnPropertyNames(table.record).length);
+        }
+
         return new modules.int._Int(Object.getOwnPropertyNames(table.hashes).length);
     },
     'keys'(table) {
-        return toTernary(Object.getOwnPropertyNames(table.hashes).map((e) => JSON.parse(e)));
+        if (table instanceof modules.tuple._Tuple) {
+            var result = new _Table();
+            for (var i = 0; i < table.toArray().length; i++) {
+                result.set(new modules.int._Int(i), new modules.int._Int(i));
+            }
+
+            return result;
+        } else if (table instanceof Environment) {
+            return toTernary(Object.getOwnPropertyNames(table.record));
+        } else {
+            return toTernary(Object.getOwnPropertyNames(table.hashes).map((e) => JSON.parse(e)));
+        }
     },
     'values'(table) {
-        return toTernary(Object.getOwnPropertyNames(table.hashes).map((e) => table.get(JSON.parse(e))));
+        if (table instanceof modules.tuple._Tuple) {
+            var result = new _Table();
+            for (var i = 0; i < table.toArray().length; i++) {
+                result.set(new modules.int._Int(i), new modules.int._Int(table.toArray()[i]));
+            }
+            return result;
+        } else if (table instanceof Environment) {
+            return toTernary(Object.getOwnPropertyNames(table.record).map((e) => table.lookup(e)));
+        } else {
+            return toTernary(Object.getOwnPropertyNames(table.hashes).map((e) => table.get(JSON.parse(e))));
+        }
     },
     'trit'(...args) {
         if (JSON.stringify(args) === "[]") {
@@ -583,6 +737,7 @@ var GlobalEnvironment = {
             case "trit": return new modules.rat._Rat(args[0].decimalValue(), 1);
             case "string": return (args[0].toString().includes("/") ? new modules.rat._Rat(toInt(args[0].toString().split("/")[0]), toInt(args[0].toString().split("/")[1])) : new modules.rat._Rat(toInt(args[0].toString()), 1))
             case "tuple": return new modules.rat._Rat(...args[0].toArray())
+            case "table": return new modules.rat._Rat(...tableToTuple(args[0]).toArray())
             case "int,int": return new modules.rat._Rat(args[0], args[1])
             default: modules.quit.quit(`invalid literal for rat(): ${args._toString()}`)
         }
@@ -621,111 +776,16 @@ var GlobalEnvironment = {
                 return result;
 
         }
-    }
-}
-
-var GlobalEnvironmentClone = clone(GlobalEnvironment)
-
-GlobalEnvironment.Math.set("PI", new modules.num._Num(Math.PI))
-GlobalEnvironment.Math.set("E", new modules.num._Num(Math.E))
-GlobalEnvironment.Math.set("abs", (n) => n.abs())
-GlobalEnvironment.Math.set("sqrt", function sqrt(a) {
-    if (type(a) !== "num") {
-        return GlobalEnvironmentClone[type(a)](sqrt(GlobalEnvironmentClone.num(a)))
+    },
+    'assert'(a) {
+        if (falsey(a)) {
+            modules.quit.quit("AssertionError")
+        }
+        return new modules.nullType._Null();
     }
 
-    var xn = a.sub(1).div(2).add(1);
-    //Newton method
-    for (var i = 0; i < 100; i++) {
-        var t1 = xn.mul(xn).sub(a);
-        var t2 = xn.mul(2);
-        xn = xn.sub(t1.div(t2));
-    }
-
-    return xn;
-
-});
-
-GlobalEnvironment.Math.set("cbrt", function cbrt(a) {
-    if (type(a) !== "num") {
-        return GlobalEnvironmentClone[type(a)](cbrt(GlobalEnvironmentClone.num(a)))
-    }
-
-    if (a.compareTo(0) < 0) {
-        return cbrt(a.neg()).neg()
-    }
-
-    var xn = a.sub(1).div(3).add(1);
-    //Newton method
-    for (var i = 0; i < 100; i++) {
-        var t1 = xn.mul(xn).mul(xn).sub(a);
-        var t2 = xn.mul(xn).mul(3);
-        xn = xn.sub(t1.div(t2));
-    }
-
-    return xn;
-
-});
-
-//Q&D integer power function
-function pow(x, y) {
-   var result = new modules.rat._Rat(1,1);
-   for(var i = 0; i < y; i++) {
-       result = x.mul(result);
-   }
-
-   return result;
-}
-
-function pow2(x, y) {
-   var result = new modules.rat._Rat(1,1);
-   for(var i = 0; i < y; i++) {
-       result = x.mul(result);
-   }
-
-   return result;
-}
+})
 
 
-GlobalEnvironment.Math.set("exp", function exp(a) {
-    if (type(a) !== "rat") {
-        return GlobalEnvironmentClone[type(a)](exp(GlobalEnvironmentClone.rat(a)));
-    }
-
-    if(a.compareTo(0) < 0) {
-        return exp(a.neg()).rec();
-    }
-
-    //Power series
-    var coefs = [["1", "1"], ["1", "1"], ["1", "1N"], ["1", "1N0"], ["1", "10N0"], ["1", "11110"], ["1", "1000N00"], ["1", "1N10N1N00"], ["1", "1N00110N100"], ["1", "1N00110N10000"], ["1", "1N1N11101N10000"], ["1", "10N10010000NN0000"], ["1", "11N0101100N11N00000"], ["1", "1NN101N00N1N0110N00000"], ["1", "10N100001NN1100001100000"], ["1", "1NNN0N00010001N001N1N000000"], ["1", "10N1N01N1NN1011NN1100NN000000"], ["1", "1NN1NN0N10110111N11N110111000000"], ["1", "1011010NN10N100NN0NN0N100N00000000"], ["1", "1N110N0N111N0NN0001N011NN010N00000000"], ["1", "1NN11N0N0N110010011NNN1N0N1000N100000000"], ["1", "111NN111NNN011N110N1N00111110N111000000000"], ["1", "1011N1101N0NNN0100NN01001N00NN0N0111000000000"], ["1", "100N1N1N11NN01000110N01N0NN000NNN01100N0000000N0"], ["1", "10NN1000011NNN0N010111NNN0N110NN0110NN0010000000N1N"], ["1", "1N11NN110101N10N0NN1N0NN10N011N01undefined111N1NN011000011001N"], ["1", "1N10N11N10N011N0NN0100101100NNNN10N10N1N110NNN01N0101N011"], ["1", "1N10N11N10N011N0NN0100101100NNNN10N10N1N110NNN01N0101N011N00"], ["1", "1N11NN1NN01110N1N100N1N1NN01N111NNN011N0N1N10N1011N111N1N10NN0N"], ["1", "10NN1NNN1NN0N0N0NN1111NN00111N00NN0011N00N00110100NNN010000101N1N0"]];
-    var result = new modules.rat._Rat(0, 1);
-    for (var i = 0; i < coefs.length; i++) {
-        result = result.add(pow(a, i).mul(new modules.rat._Rat(...coefs[i])));
-    }
-
-    return result;
-
-});
-
-
-
-// GlobalEnvironment.Math.set("log", function log(a) {
-//     if (type(a) !== "num") {
-//         return GlobalEnvironmentClone[type(a)](log(GlobalEnvironmentClone.num(a)));
-//     }
-
-//     var result = new modules.num._Num(0)
-//     for(var i = 1; i < 100; i++) {
-//         var t1 = a.sub(1).div(a.add(1));
-//         var t2 = pow(t1,2*i-1);
-//         console.log("watapon");
-//         result = result.add(t2.div(2*i-1));
-//     }
-
-//     result = result.mul(2);
-//     return result;
-
-// });
-GlobalEnvironment = new Environment(GlobalEnvironment);
 //Export
 module.exports = Owlet;

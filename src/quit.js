@@ -2,13 +2,6 @@
 Defines an error function
 */
 
-class OwletError extends Error {
-    constructor(message) {
-        super(message);
-        this.message = message;
-        this.name = "OwletError"
-    }
-}
 
 
 class OwletWarning {
@@ -20,12 +13,10 @@ class OwletWarning {
         console.warn("OwletWarning: " + this.message.toString().split(": ").slice(1));
     }
 }
+
 function quit(msg) {
-    if (msg) {
-        throw new OwletError(msg);
-    } else {
-        throw new OwletError();
-    }
+    var err = new Error(msg);
+    throw err;
 }
 
 function warn(msg) {
@@ -42,4 +33,4 @@ function warn(msg) {
 
 
 
-module.exports = { quit, warn, OwletError, OwletWarning };
+module.exports = { quit, warn, OwletWarning };
