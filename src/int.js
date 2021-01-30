@@ -10,8 +10,8 @@ const quit = require("./quit.js");
 
 function _Int(s) {
     if (typeof s === "string") {
-        if(s.includes("undefined")) {
-              s = (s || "").toString().replace(/undefined/g,"0");
+        if (s.includes("undefined")) {
+            s = (s || "").toString().replace(/undefined/g, "0");
         }
         for (var i = 0; i < s.length; i++) {
             if (!"01N".includes(s.charAt(i))) {
@@ -27,13 +27,13 @@ function _Int(s) {
         return;
     } else if (typeof s === "number") {
         s = _Int.convertToBT(s);
-    } else if(s instanceof BigInteger) {
+    } else if (s instanceof BigInteger) {
         s = _Int.bigToBT(s);
     } else if (Array.isArray(s)) {
         s = s.join("");
     }
 
-    s = (s || "").toString().replace(/undefined/g,"0");
+    s = (s || "").toString().replace(/undefined/g, "0");
 
 
     var i = 0;
@@ -362,8 +362,6 @@ _Int.prototype.shorter = function (i) {
 _Int.prototype.mul = function (that) {
     //27 -> 3
     that = new _Int(that);
-
-
     var result = new _Int("0");
     for (var i = 0; i < that.length(); i++) {
         var j = that.length() - i - 1;
@@ -373,6 +371,8 @@ _Int.prototype.mul = function (that) {
 
     return result;
 }
+
+
 
 function factorial(n) {
     if ((n === 0) || (n === 1))
@@ -425,13 +425,13 @@ _Int.prototype.div = function (that) {
         quit.quit("divided by 0");
     }
 
-     //Deal with negatives
+    //Deal with negatives
     if (that.value.charAt(0) === "N") {
         return this.div(that.neg());
     } else if (this.value.charAt(0) === "N") {
         return this.neg().div(that).neg();
     } else {
-    return longDivision(this, that);
+        return longDivision(this, that);
     }
 }
 

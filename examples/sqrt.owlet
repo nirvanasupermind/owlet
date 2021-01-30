@@ -1,6 +1,5 @@
-//This example computes the square root of a num using Newton iteration
+//This program computes the square root of a num using Newton iteration
 //This is also the algorithm used in Math.sqrt
-//Expected output: 1.414213562373
 
 (begin
     (def sqrt (x) (begin
@@ -20,5 +19,5 @@
     ))
 
 
-    (print (sqrt 2.0))
+    (print (sqrt 2.0)) //=>1.41421356237309504880169
 )

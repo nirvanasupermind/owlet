@@ -5,10 +5,44 @@
 const int = require("./int.js");
 const BigInteger = require("big-integer")
 const quit = require('./quit.js')
-
-String.prototype.abs = function() {
+const ll = 9223372036854775807;
+String.prototype.abs = function () {
     return new int._Int(int._Int.convertToBT(this)).abs();
 }
+
+function gcd2(reduceNum, b) {
+    return b == 0 ?
+        reduceNum : gcd2(b, reduceNum % b);
+}
+
+// Here 'a' is integer and 'b' 
+// is string. The idea is to make 
+// the second number (represented  
+// as b) less than and equal to  
+// first number by calculating its  
+// modulus with first integer  
+// number using basic mathematics 
+function reduceB(a, b) {
+    var result = 0;
+    for (var i = 0; i < b.length; i++) {
+        result = (result * 10 +
+            parseFloat(b.charAt(i))) % a;
+    }
+    return result;
+}
+
+function gcdLarge(a, b) {
+    // Reduce 'b' i.e the second  
+    // number after modulo with a 
+    var num = reduceB(a, b);
+
+    // Now,use the euclid's algorithm  
+    // to find the gcd of the 2 numbers 
+    return gcd2(num, a);
+}
+
+
+
 //helper
 Number.prototype.abs = function () {
     return Math.abs(this);
@@ -63,17 +97,17 @@ function _Rat(n, d) {
         this.d = new int._Int(int._Int.convertToBT(k));
 
 
-    } else if(n instanceof int._Int && typeof d === "undefined") {
+    } else if (n instanceof int._Int && typeof d === "undefined") {
         this.n = n;
         this.d = d;
     } else {
         var _n = n.abs();
         var _d = d.abs();
         //Compute HCF to reduce fractions
-        var hcf = new int._Int(int._Int.bigToBT(BigInteger.gcd(new int._Int(_n).bigIntValue(), new int._Int(_d).bigIntValue())));
+        var hcf = new int._Int(int._Int.bigToBT(gcd2(new int._Int(_n).bigIntValue(), new int._Int(_d).bigIntValue())));
         this.n = new int._Int(n).div(hcf);
         this.d = new int._Int(d).div(hcf);
-        if(this.d.compareTo(0) < 0) {
+        if (this.d.compareTo(0) < 0) {
             this.n = this.n.neg();
             this.d = this.d.neg();
         }
@@ -99,6 +133,9 @@ _Rat.prototype.add = function (that) {
         b = this.d,
         c = that.n,
         d = that.d;
+
+
+
 
     return new _Rat(a.mul(d).add(b.mul(c)), b.mul(d));
 }
@@ -146,6 +183,7 @@ _Rat.prototype.mul = function (that) {
         c = that.n,
         d = that.d;
 
+
     return new _Rat(a.mul(c), b.mul(d));
 }
 
@@ -163,7 +201,7 @@ _Rat.prototype.div = function (that) {
  */
 
 _Rat.prototype.floor = function () {
-    return new _Rat(this.n.div(this.d),1);
+    return new _Rat(this.n.div(this.d), 1);
 }
 
 /**
@@ -178,7 +216,7 @@ _Rat.prototype.mod = function (that) {
         d = that.d;
 
     var t1 = this;
-    var t2 = new _Rat(a.mul(d),b.mul(c)).floor().mul(that);
+    var t2 = new _Rat(a.mul(d), b.mul(c)).floor().mul(that);
     return t1.sub(t2);
 
 }

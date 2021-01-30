@@ -1,0 +1,40 @@
+/*
+This program creates a class called Complex, which represents a complex number. 
+They support addition, subtraction, multiplication, division, and square root.
+*/
+(begin
+    (class Complex null (begin
+        (def constructor (this a b) (begin
+            (set (prop this "a") a)
+            (set (prop this "b") b)
+            (set (prop this "add") (lambda (that) (begin
+                (local a1 (prop this "a"))
+                (local b1 (prop this "b"))
+                (local a2 (prop that "a"))
+                (local b2 (prop that "b"))
+                (new Complex (+ a1 a2) (+ b1 b2))
+            )))
+            (set (prop this "sub") (lambda (that) (begin
+                (local a1 (prop this "a"))
+                (local b1 (prop this "b"))
+                (local a2 (prop that "a"))
+                (local b2 (prop that "b"))
+                (new Complex (+ a1 a2) (+ b1 b2))
+            )))
+        ))
+        
+        (def toString(x) (begin
+            (local result "")
+            (set result (+ result (string (prop x "a"))))
+            (set result (+ result "+"))
+            (set result (+ result (string (prop x "b"))))
+            (set result (+ result "i"))
+            result
+        ))
+    ))
+
+
+    (local x (new Complex 0.0 1.0))
+    (local y (new Complex 1.0 1.0))
+    (print ((prop Math "sin") 1.0))
+)

@@ -80,11 +80,7 @@ const productions = [[-1,1,(_1) => { __ = _1 }],
      }],
 [1,1,(_1) => { 
         const modules = require('../modules.js');
-        if(_1.charAt(0) === "-") {
-            __ = modules.num._Num.parse(_1.slice(1)).neg();
-        } else {
         __ = modules.num._Num.parse(_1);
-        }
      }],
 [1,1,(_1) => { 
         const modules = require('../modules.js');

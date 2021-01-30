@@ -3,7 +3,7 @@ const scale = new int._Int("1" + "0".repeat(48)); //The scale for fixed-point nu
 // const bigIntScale = scale;
 const BigInteger = require("big-integer")
 const Big = require("big-js")
-Big.DP = Math.ceil(Math.log10(scale.decimalValue()));
+Big.DP = Math.floor(Math.log10(scale.decimalValue()));
 const clone = (orig) => { return Object.assign(Object.create(Object.getPrototypeOf(orig)), orig) };
 //Polyfill for old browsers
 
@@ -28,7 +28,12 @@ function convertSciToStandard(a) {
     var [mantissa, exponent] = a.split("e").map(parseFloat);
     var [intPart, fracPart] = mantissa.toString().split(".").map(parseFloat);
     fracPart = (fracPart === undefined ? "0" : fracPart);
-    return (intPart.toString() + fracPart.toString()) + "0".repeat(exponent - fracPart.toString().length);
+    if (exponent < 0) {
+        var t1 = ("0." + "0".repeat(-(exponent - fracPart.toString().length)));
+        return (t1 + (intPart.toString() + fracPart.toString())).split("0.-").join("-0.");
+    } else {
+        return (intPart.toString() + fracPart.toString()) + "0".repeat(exponent - fracPart.toString().length);
+    }
 }
 
 /**
@@ -38,15 +43,16 @@ function convertSciToStandard(a) {
  */
 function _Num(a) {
     if (a instanceof _Num) {
-        Object.assign(this, a);
+       this.a = a.a;
     } else if (typeof a === 'number') {
         //Switch gears: The user is requesting conversion from JS number.
         var flipflag = Math.sign(a);
         a = Math.abs(a);
-        a = BigInteger(convertSciToStandard(Big(a).mul(Big(scale.decimalValue())).toString()));
+        a = BigInteger(convertSciToStandard(Big(a).mul(Big(scale.decimalValue())).toFixed(0))).divide(1e15);
         this.a = new int._Int(int._Int.bigToBT(a)).mul(flipflag);
+    } else if (a instanceof Big) {
+        this.a = new int._Int(int._Int.bigToBT(a.mul(scale).toFixed(0)));
     } else {
-
         this.a = new int._Int(a);
     }
 }
@@ -120,7 +126,7 @@ _Num.prototype.compareTo = function (that) {
 
 
 _Num.prototype.neg = function () {
-    return this.mul(-1);
+    return new _Num(this.a.neg());
 }
 
 _Num.prototype.abs = function () {
@@ -139,15 +145,17 @@ _Num.prototype.abs = function () {
 
 
 _Num.parse = function (x) {
-    var intPart = x.split(".")[0];
-    var fracPart = (x.split(".")[1] === undefined ? "0" : x.split(".")[1]);
-    var t1 = BigInteger(Math.floor(scale.decimalValue() * parseFloat("." + fracPart)));
-    var t2 = parseFloat(fracPart) === 0 ? int._Int.ZERO : new int._Int(int._Int.bigToBT(t1));
-    return new _Num(new int._Int(int._Int.bigToBT(BigInteger(intPart).times(scale.bigIntValue()))).add(t2));
+    if (x.slice(-2) === ".0") {
+        x = x.slice(0, -2);
+    }
+    if (x.charAt(0) === "-") {
+        return _Num.parse(x.slice(1)).neg();
+    }
+    return new _Num(Big(x));
 }
 
 _Num.prototype.toJSON = function () {
-    return this.bigFloatValue();
+    return this.toString();
 }
 
 _Num.prototype.floor = function () {

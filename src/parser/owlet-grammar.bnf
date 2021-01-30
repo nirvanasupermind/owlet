@@ -39,11 +39,7 @@ Atom
     }
     | NUM {
         const modules = require('../modules.js');
-        if($1.charAt(0) === "-") {
-            $$ = modules.num._Num.parse($1.slice(1)).neg();
-        } else {
         $$ = modules.num._Num.parse($1);
-        }
     }
     | STRING {
         const modules = require('../modules.js');

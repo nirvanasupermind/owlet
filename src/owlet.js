@@ -3,6 +3,7 @@ const assert = require('assert');
 const Environment = require("./environment.js");
 const util = require('util');
 const BigInteger = require('big-integer')
+const Big = require('big-js')
 const owletParser = require('./parser/owletParser.js')
 const Transformer = require('./transformer.js')
 const fs = require('fs');
@@ -40,7 +41,7 @@ Object.prototype._toString = function () {
         } else if (this.hasOwnProperty("record")) {
             return printObj(this.record, "Module")
         } else if (this.hasOwnProperty("params") && this.hasOwnProperty("body")) {
-            return printObj(this, "Function", ["params"]);
+            return printObj(this, "Function", []);
         }
     }
 
@@ -126,6 +127,10 @@ class Owlet {
         exp = exp.replace(/(\{(.*?)\})/g, function (_, grp) {
             return owletParser.parse(grp);
         });
+
+        // exp = exp.replace(/([1-9][0-9]*)\/([1-9][0-9]*)/g,function(_,n,d) {
+        //     return new modules.rat._Rat(owletParser.parse(n),owletParser.parse(d));
+        // })
 
 
         exp = exp.replace(/(\b[0-9]+(\.[0-9]+)?(e[+-]?[0-9]+)\b)/g, function (_, grp) {
@@ -521,20 +526,21 @@ var GlobalEnvironment = new Environment({
     unknown: new modules.trit._Trit("0"),
     false: new modules.trit._Trit("N"),
     Math: new Environment({
-        PI: new modules.num._Num(Math.PI),
+        PI: new modules.rat._Rat(Math.PI),
         E: new modules.num._Num(Math.E),
         sin: function sin(a) {
-            if (!(a instanceof modules.num._Num)) {
+            if (!(a instanceof modules.rat._Rat)) {
                 //Cast
-                return GlobalEnvironment.lookup(type(a))(sin(GlobalEnvironment.lookup("num")(a)));
+                return GlobalEnvironment.lookup(type(a))(sin(GlobalEnvironment.lookup("rat")(a)));
             } else {
                 a = a.mod(GlobalEnvironment.lookup("Math").lookup("PI").mul(2)).sub(1);
-                var pow = (x, y) => (y === 0 ? new modules.num._Num(1) : x.mul(pow(x, y - 1))); //Q&D int power
+                var pow = (x, y) => (y === 0 ? new modules.rat._Rat(1,1) : x.mul(pow(x, y - 1))); //Q&D int power
+                console.log(pow(new modules.rat._Rat(2,1),3).decimalValue());
                 //Taylor series
                 var coefs = [0.8414709848078965, 0.5403023058681398, -0.42073549240394825, -0.09005038431135662, 0.03506129103366235, 0.004502519215567831, -0.0011687097011220786, -0.00010720283846590075, 0.000020869816091465686, 1.4889283120263993e-6, -2.3188684546072984e-7, -1.353571192751272e-8, 1.7567185262176504e-9, 8.676738415072256e-11, -9.652299594602475e-12, -4.1317801976534555e-13, 4.021791497751031e-14, 1.519036837372594e-15, -1.3143109469774612e-16, -4.441628179452029e-18, 3.45871301836174e-19, 1.0575305189171499e-20, -7.486391814635802e-22, -2.089981262682114e-23, 1.3562304012021378e-24, 3.4833021044701907e-26, -2.08650830954175e-27, -4.961968809786596e-29, 2.7599316263779767e-30, 6.110799026830784e-32, -3.172335202733306e-33];
-                var result = new modules.num._Num(0);
+                var result = new modules.rat._Rat(0,1);
                 for (var i = 0; i < coefs.length; i++) {
-                    result = result.add(pow(a, i).mul(new modules.num._Num(coefs[i])));
+                    result = result.add(pow(a, i).mul(coefs[i]));
                 }
 
                 return result;
@@ -571,28 +577,17 @@ var GlobalEnvironment = new Environment({
                 return sin(a).div(cos(a));
             }
         },
-        asin: function asin(a) {
-            if (!(a instanceof modules.num._Num)) {
-                //Cast
-                return GlobalEnvironment.lookup(type(a))(sin(GlobalEnvironment.lookup("num")(a)));
-            } else {
-                //Newton iteration
-                var xn = a;
-                var sin = GlobalEnvironment.lookup("Math").lookup("sin");
-                for(var i = 0; i < NEWTON_ITERATIONS; i++) {
-                    var secant = new modules.num._Num(1).div(xn);
-                    xn = xn.sub(sin(xn).sub(a).mul(secant));
-                }
-                
-            }
+        exp: function exp(op1) {
+
         },
         'abs'(op1) {
             return op1.abs();
         },
         'random'() {
-            var num = rand();
-            return new modules.rat._Rat(num, modulus);
-        }
+            var theRand = rand();
+            var num = GlobalEnvironment.lookup("num");
+            return num(theRand).div(num(modulus));
+        },
 
     }),
     '+'(op1, op2) {
