@@ -1,6 +1,6 @@
 {
   "name": "owlet",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "Programming language for ternary computing",
   "main": "src/owlet.js",
   "directories": {
