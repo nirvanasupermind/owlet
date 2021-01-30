@@ -547,39 +547,6 @@ var GlobalEnvironment = new Environment({
 
             }
         },
-        cos: function cos(a) {
-            if (!(a instanceof modules.num._Num)) {
-                //Cast
-                return GlobalEnvironment.lookup(type(a))(sin(GlobalEnvironment.lookup("num")(a)));
-            } else {
-                a = a.mod(GlobalEnvironment.lookup("Math").lookup("PI").mul(2)).sub(1);
-                var pow = (x, y) => (y === 0 ? new modules.num._Num(1) : x.mul(pow(x, y - 1))); //Q&D int power
-                //Taylor series
-                var coefs = [0.5403023058681398, -0.8414709848078965, -0.2701511529340699, 0.1402451641346494, 0.022512596077839155, -0.007012258206732471, -0.0007504198692613053, 0.00016695852873172549, 0.000013400354808237594, -2.3188684546072986e-6, -1.488928312026399e-7, 2.1080622314611807e-8, 1.1279759939593935e-9, -1.3513219432443465e-10, -6.197670296480184e-12, 6.434866396401649e-13, 2.5823626235334097e-14, -2.36575970455943e-15, -8.439093540958854e-17, 6.91742603672348e-18, 2.2208140897260144e-19, -1.6470061992198763e-20, -4.806956904168864e-22, 3.2549529628851306e-23, 8.708255261175476e-25, -5.424921604808551e-26, -1.3397315786423807e-27, 7.727808553858335e-29, 1.772131717780927e-30, -9.517005608199921e-32, -2.036933008943594e-33];
-                var result = new modules.num._Num(0);
-                for (var i = 0; i < coefs.length; i++) {
-                    result = result.add(pow(a, i).mul(new modules.num._Num(coefs[i])));
-                }
-
-                return result;
-
-            }
-
-        },
-        tan: function tan(a) {
-            if (!(a instanceof modules.num._Num)) {
-                //Cast
-                return GlobalEnvironment.lookup(type(a))(sin(GlobalEnvironment.lookup("num")(a)));
-            } else {
-                a = a.mod(GlobalEnvironment.lookup("Math").lookup("PI"));
-                var sin = GlobalEnvironment.lookup("Math").lookup("sin");
-                var cos = GlobalEnvironment.lookup("Math").lookup("cos");
-                return sin(a).div(cos(a));
-            }
-        },
-        exp: function exp(op1) {
-
-        },
         'abs'(op1) {
             return op1.abs();
         },
