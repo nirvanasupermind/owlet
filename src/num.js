@@ -163,7 +163,7 @@ _Num.prototype.floor = function () {
 }
 
 _Num.prototype.toString = function () {
-    if (!(this.bigFloatValue().toString().includes("."))) {
+    if (!(this.bigFloatValue().toString().includes(".")) && !(this.bigFloatValue().toString().includes("e"))) {
         return this.bigFloatValue().toString() + ".0";
     } else {
         return this.bigFloatValue().toString();
@@ -174,4 +174,4 @@ _Num.prototype.toString = function () {
 
 
 //Export
-module.exports = { _Num, scale }
+module.exports = { _Num, scale, convertSciToStandard }

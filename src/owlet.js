@@ -134,7 +134,10 @@ class Owlet {
 
 
         exp = exp.replace(/(\b[0-9]+(\.[0-9]+)?(e[+-]?[0-9]+)\b)/g, function (_, grp) {
-            return modules.num._Num.parse(grp).toString();
+            if(!(modules.num.convertSciToStandard(grp).includes("."))) {
+                return modules.num.convertSciToStandard(grp)+".0";
+            }
+            return modules.num.convertSciToStandard(grp);
         });
 
         return exp;
@@ -535,7 +538,7 @@ var GlobalEnvironment = new Environment({
             } else {
                 a = a.mod(GlobalEnvironment.lookup("Math").lookup("PI").mul(2)).sub(1);
                 var pow = (x, y) => (y === 0 ? new modules.rat._Rat(1,1) : x.mul(pow(x, y - 1))); //Q&D int power
-                console.log(pow(new modules.rat._Rat(2,1),3).decimalValue());
+                // console.log(pow(new modules.rat._Rat(2,1),3).decimalValue());
                 //Taylor series
                 var coefs = [0.8414709848078965, 0.5403023058681398, -0.42073549240394825, -0.09005038431135662, 0.03506129103366235, 0.004502519215567831, -0.0011687097011220786, -0.00010720283846590075, 0.000020869816091465686, 1.4889283120263993e-6, -2.3188684546072984e-7, -1.353571192751272e-8, 1.7567185262176504e-9, 8.676738415072256e-11, -9.652299594602475e-12, -4.1317801976534555e-13, 4.021791497751031e-14, 1.519036837372594e-15, -1.3143109469774612e-16, -4.441628179452029e-18, 3.45871301836174e-19, 1.0575305189171499e-20, -7.486391814635802e-22, -2.089981262682114e-23, 1.3562304012021378e-24, 3.4833021044701907e-26, -2.08650830954175e-27, -4.961968809786596e-29, 2.7599316263779767e-30, 6.110799026830784e-32, -3.172335202733306e-33];
                 var result = new modules.rat._Rat(0,1);
