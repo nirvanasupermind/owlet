@@ -36,13 +36,11 @@ _Table.prototype = {
 var getCircularReplacer = () => {
   const seen = new WeakSet();
   return (key, value) => {
-    if (String(value) === "[object Object]") {
+    if (typeof value === "object" && value !== null) {
       if ((value.hasOwnProperty("params") && value.hasOwnProperty("body")) || value.hasOwnProperty("record")) {
         return value._toString();
       }
-    }
-
-    if (typeof value === "object" && value !== null) {
+      
       if (seen.has(value)) {
         return "[Circular]";
       }
@@ -54,7 +52,7 @@ var getCircularReplacer = () => {
 
 JSON.stringify2 = function (o) {
   if (Object.getOwnPropertyNames(o).length >= MAX_PROPS) {
-    return JSON.stringify(o,getCircularReplacer(),4);
+    return JSON.stringify(o, getCircularReplacer(), 4);
     // var o2 = o.clone();
     // var o3 = o.clone();
     // var props = Object.getOwnPropertyNames(o);

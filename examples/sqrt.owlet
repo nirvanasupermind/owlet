@@ -1,6 +1,4 @@
 //This program computes the square root of a num using Newton iteration
-//This is also the algorithm used in Math.sqrt
-
 (begin
     (def sqrt (x) (begin
         (local xn x)

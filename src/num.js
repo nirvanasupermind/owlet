@@ -3,7 +3,7 @@ const scale = new int._Int("1" + "0".repeat(48)); //The scale for fixed-point nu
 // const bigIntScale = scale;
 const BigInteger = require("big-integer")
 const Big = require("big-js")
-Big.DP = Math.floor(Math.log10(scale.decimalValue()));
+Big.DP = Math.ceil(Math.log10(scale.decimalValue()));
 const clone = (orig) => { return Object.assign(Object.create(Object.getPrototypeOf(orig)), orig) };
 //Polyfill for old browsers
 

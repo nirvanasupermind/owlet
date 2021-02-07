@@ -1,15 +1,4 @@
 (begin
-    (class Complex null (begin
-        (def constructor (this x y) (begin
-            (set (prop this "x") x)
-            (set (prop this "y") y)
-        ))
-        
-        (def toString (x) (begin
-            (+ (+ (string (prop x "x")) "+") (+ (string (prop x "y")) "i"))
-        ))
-    ))
-
-    (local a 29885253642832009631926505007869737743646923423744/1000000000000000000000000000000000000000000000000001)
-    (print 1e1088)
+    (local a {"foo":2})
+    (print (prop Week "Mon"))
 )

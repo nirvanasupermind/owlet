@@ -120,9 +120,14 @@ class Owlet {
 
     _preProcess(exp) {
         exp = removeComments(exp);
+
         exp = exp.replace(/(\b0[zZ][01N]+\b)/g, function (_, grp) {
             return new modules.int._Int(grp.slice(2)).toString();
         });
+
+        // exp = exp.replace(/\<(.*?)\>/g, function (_,grp) {
+        //     return 
+        // });
 
         exp = exp.replace(/(\{(.*?)\})/g, function (_, grp) {
             return owletParser.parse(grp);
@@ -134,14 +139,19 @@ class Owlet {
 
 
         exp = exp.replace(/(\b[0-9]+(\.[0-9]+)?(e[+-]?[0-9]+)\b)/g, function (_, grp) {
-            if(!(modules.num.convertSciToStandard(grp).includes("."))) {
-                return modules.num.convertSciToStandard(grp)+".0";
+            // console.log("2", arguments);
+
+            if (!(modules.num.convertSciToStandard(grp).includes("."))) {
+                return modules.num.convertSciToStandard(grp) + ".0";
             }
             return modules.num.convertSciToStandard(grp);
         });
 
         return exp;
     }
+
+
+
 
 
     /**
@@ -155,6 +165,10 @@ class Owlet {
             exp = owletParser.parse(exp);
         }
 
+
+        if (JSON.stringify(exp) === "[]") {
+            exp = new modules.nullType._Null();
+        }
 
 
 
@@ -185,7 +199,7 @@ class Owlet {
 
         //=============
         //Literals
-        if (isInt(exp) || isString(exp) || isFloat(exp) || isTable(exp)) {
+        if (isInt(exp) || isString(exp) || isFloat(exp) || isTable(exp) || exp + "" === "null") {
             return exp;
         }
 
@@ -258,9 +272,11 @@ class Owlet {
             const instanceEnv = this.eval(instance, env, true);
             if (instanceEnv instanceof modules.table._Table || instanceEnv instanceof modules.tuple._Tuple) {
                 return instanceEnv.get(name);
+            } else if (instanceEnv instanceof modules.enumType._Enum) {
+                return (instanceEnv[name] === undefined ? new modules.nullType._Null() : instanceEnv[name]);
+            } else {
+                return instanceEnv.lookup(name);
             }
-
-            return instanceEnv.lookup(name);
         }
 
         if (exp[0] === 'class') {
@@ -310,6 +326,11 @@ class Owlet {
             return this.eval(ifExp, env, true);
         }
 
+        if (exp[0] === 'enum') {
+            const [_tag, name, ...body] = exp;
+            return env.define(name, new modules.enumType._Enum(...body));
+        }
+
         if (exp[0] === 'module') {
             const [_tag, name, body] = exp;
             const moduleEnv = new Environment({}, env);
@@ -319,7 +340,9 @@ class Owlet {
 
         if (exp[0] === 'import') {
             const [_tag, url] = exp;
-            var moduleSrc = fs.readFileSync(path.join(__dirname, url._toString()), 'utf8')
+            var thePath = path.join(__dirname, url._toString());
+
+            var moduleSrc = fs.readFileSync(thePath, 'utf8')
             const body = owletParser.parse(this._preProcess(moduleSrc))
             const moduleExp = ["module", makeid(10), body];
             return this.eval(moduleExp, this.global, true);
@@ -343,6 +366,7 @@ class Owlet {
         if (isVariableName(exp)) {
             //=============
             //Variable lookup
+            // console.log("**"+JSON.stringify(exp));
             return env.lookup(exp);
         };
 
@@ -368,7 +392,15 @@ class Owlet {
 
 
 
+        if (exp[0] === "for") {
+            exp = this._transformer.transformForToWhile(exp);
+            return this.eval(exp, env, true);
+        }
 
+        if (exp[0] === "+=" || exp[0] === "+=") {
+            exp = this._transformer.transformPlusEquals(exp);
+            return this.eval(exp, env, true);
+        }
         //==============
         //Function call
         if (Array.isArray(exp)) {
@@ -388,7 +420,11 @@ class Owlet {
     }
 
     _callUserDefinedFunction(fn, args) {
-        const activationRecord = {};
+        while (args.length < fn.params.length) {
+            args.push(new modules.nullType._Null())
+        }
+
+        const activationRecord = { "vargv": new modules.tuple._Tuple(...args) };
         fn.params.forEach((param, index) => {
             activationRecord[param] = args[index];
         })
@@ -508,9 +544,364 @@ function falsey(exp) {
     ].map(JSON.stringify).indexOf(JSON.stringify(exp)) >= 0 || !exp;
 }
 
-function removeComments(string) {
-    //Takes a string of code, not an actual function.
-    return string.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').trim();//Strip comments
+function removeComments(toBeStrippedStr) {
+    //LEXER
+    function Lexer() {
+        this.setIndex = false;
+        this.useNew = false;
+        for (var i = 0; i < arguments.length; ++i) {
+            var arg = arguments[i];
+            if (arg === Lexer.USE_NEW) {
+                this.useNew = true;
+            }
+            else if (arg === Lexer.SET_INDEX) {
+                this.setIndex = Lexer.DEFAULT_INDEX;
+            }
+            else if (arg instanceof Lexer.SET_INDEX) {
+                this.setIndex = arg.indexProp;
+            }
+        }
+        this.rules = [];
+        this.errorLexeme = null;
+    }
+
+    Lexer.NULL_LEXEME = {};
+
+    Lexer.ERROR_LEXEME = {
+        toString: function () {
+            return "[object Lexer.ERROR_LEXEME]";
+        }
+    };
+
+    Lexer.DEFAULT_INDEX = "index";
+
+    Lexer.USE_NEW = {};
+
+    Lexer.SET_INDEX = function (indexProp) {
+        if (!(this instanceof arguments.callee)) {
+            return new arguments.callee.apply(this, arguments);
+        }
+        if (indexProp === undefined) {
+            indexProp = Lexer.DEFAULT_INDEX;
+        }
+        this.indexProp = indexProp;
+    };
+
+    (function () {
+        var New = (function () {
+            var fs = [];
+            return function () {
+                var f = fs[arguments.length];
+                if (f) {
+                    return f.apply(this, arguments);
+                }
+                var argStrs = [];
+                for (var i = 0; i < arguments.length; ++i) {
+                    argStrs.push("a[" + i + "]");
+                }
+                f = new Function("var a=arguments;return new this(" + argStrs.join() + ");");
+                if (arguments.length < 100) {
+                    fs[arguments.length] = f;
+                }
+                return f.apply(this, arguments);
+            };
+        })();
+
+        var flagMap = [
+            ["global", "g"]
+            , ["ignoreCase", "i"]
+            , ["multiline", "m"]
+            , ["sticky", "y"]
+        ];
+
+        function getFlags(regex) {
+            var flags = "";
+            for (var i = 0; i < flagMap.length; ++i) {
+                if (regex[flagMap[i][0]]) {
+                    flags += flagMap[i][1];
+                }
+            }
+            return flags;
+        }
+
+        function not(x) {
+            return function (y) {
+                return x !== y;
+            };
+        }
+
+        function Rule(regex, lexeme) {
+            if (!regex.global) {
+                var flags = "g" + getFlags(regex);
+                regex = new RegExp(regex.source, flags);
+            }
+            this.regex = regex;
+            this.lexeme = lexeme;
+        }
+
+        Lexer.prototype = {
+            constructor: Lexer
+
+            , addRule: function (regex, lexeme) {
+                var rule = new Rule(regex, lexeme);
+                this.rules.push(rule);
+            }
+
+            , setErrorLexeme: function (lexeme) {
+                this.errorLexeme = lexeme;
+            }
+
+            , runLexeme: function (lexeme, exec) {
+                if (typeof lexeme !== "function") {
+                    return lexeme;
+                }
+                var args = exec.concat(exec.index, exec.input);
+                if (this.useNew) {
+                    return New.apply(lexeme, args);
+                }
+                return lexeme.apply(null, args);
+            }
+
+            , lex: function (str) {
+                var index = 0;
+                var lexemes = [];
+                if (this.setIndex) {
+                    lexemes.push = function () {
+                        for (var i = 0; i < arguments.length; ++i) {
+                            if (arguments[i]) {
+                                arguments[i][this.setIndex] = index;
+                            }
+                        }
+                        return Array.prototype.push.apply(this, arguments);
+                    };
+                }
+                while (index < str.length) {
+                    var bestExec = null;
+                    var bestRule = null;
+                    for (var i = 0; i < this.rules.length; ++i) {
+                        var rule = this.rules[i];
+                        rule.regex.lastIndex = index;
+                        var exec = rule.regex.exec(str);
+                        if (exec) {
+                            var doUpdate = !bestExec
+                                || (exec.index < bestExec.index)
+                                || (exec.index === bestExec.index && exec[0].length > bestExec[0].length)
+                                ;
+                            if (doUpdate) {
+                                bestExec = exec;
+                                bestRule = rule;
+                            }
+                        }
+                    }
+                    if (!bestExec) {
+                        if (this.errorLexeme) {
+                            lexemes.push(this.errorLexeme);
+                            return lexemes.filter(not(Lexer.NULL_LEXEME));
+                        }
+                        ++index;
+                    }
+                    else {
+                        if (this.errorLexeme && index !== bestExec.index) {
+                            lexemes.push(this.errorLexeme);
+                        }
+                        var lexeme = this.runLexeme(bestRule.lexeme, bestExec);
+                        lexemes.push(lexeme);
+                        index = bestRule.regex.lastIndex;
+                    }
+                }
+                return lexemes.filter(not(Lexer.NULL_LEXEME));
+            }
+        };
+    })();
+
+    if (!Array.prototype.filter) {
+        Array.prototype.filter = function (fun) {
+            var len = this.length >>> 0;
+            var res = [];
+            var thisp = arguments[1];
+            for (var i = 0; i < len; ++i) {
+                if (i in this) {
+                    var val = this[i];
+                    if (fun.call(thisp, val, i, this)) {
+                        res.push(val);
+                    }
+                }
+            }
+            return res;
+        };
+    }
+
+    Array.prototype.last = function () {
+        return this[this.length - 1];
+    };
+
+    RegExp.prototype.getFlags = (function () {
+        var flagMap = [
+            ["global", "g"]
+            , ["ignoreCase", "i"]
+            , ["multiline", "m"]
+            , ["sticky", "y"]
+        ];
+
+        return function () {
+            var flags = "";
+            for (var i = 0; i < flagMap.length; ++i) {
+                if (this[flagMap[i][0]]) {
+                    flags += flagMap[i][1];
+                }
+            }
+            return flags;
+        };
+    })();
+
+    RegExp.concat = function (/*r1, r2, ..., rN [, flagMerger] */) {
+        var regexes = Array.prototype.slice.call(arguments);
+        var regexStr = "";
+        var flags = (regexes[0].getFlags && regexes[0].getFlags()) || "";
+        var flagMerger = RegExp.concat.INTERSECT_FLAGS;
+        if (typeof regexes.last() === "function") {
+            flagMerger = regexes.pop();
+        }
+        for (var j = 0; j < regexes.length; ++j) {
+            var regex = regexes[j];
+            if (typeof regex === "string") {
+                flags = flagMerger(flags, "");
+                regexStr += regex;
+            }
+            else {
+                flags = flagMerger(flags, regex.getFlags());
+                regexStr += regex.source;
+            }
+        }
+        return new RegExp(regexStr, flags);
+    };
+
+    (function () {
+        function setToString(set) {
+            var str = "";
+            for (var prop in set) {
+                if (set.hasOwnProperty(prop) && set[prop]) {
+                    str += prop;
+                }
+            }
+            return str;
+        }
+
+        function toSet(str) {
+            var set = {};
+            for (var i = 0; i < str.length; ++i) {
+                set[str.charAt(i)] = true;
+            }
+            return set;
+        }
+
+        function union(set1, set2) {
+            for (var prop in set2) {
+                if (set2.hasOwnProperty(prop)) {
+                    set1[prop] = true;
+                }
+            }
+            return set1;
+        }
+
+        function intersect(set1, set2) {
+            for (var prop in set2) {
+                if (set2.hasOwnProperty(prop) && !set2[prop]) {
+                    delete set1[prop];
+                }
+            }
+            return set1;
+        }
+
+        RegExp.concat.UNION_FLAGS = function (flags1, flags2) {
+            return setToString(union(toSet(flags1), toSet(flags2)));
+        }
+
+        RegExp.concat.INTERSECT_FLAGS = function (flags1, flags2) {
+            return setToString(intersect(toSet(flags1), toSet(flags2)));
+        };
+
+    })();
+
+    RegExp.prototype.group = function () {
+        return RegExp.concat("(?:", this, ")", RegExp.concat.UNION_FLAGS);
+    };
+
+    RegExp.prototype.optional = function () {
+        return RegExp.concat(this.group(), "?", RegExp.concat.UNION_FLAGS);
+    };
+
+    RegExp.prototype.or = function (regex) {
+        return RegExp.concat(this, "|", regex, RegExp.concat.UNION_FLAGS).group();
+    };
+
+    RegExp.prototype.many = function () {
+        return RegExp.concat(this.group(), "*", RegExp.concat.UNION_FLAGS);
+    };
+
+    RegExp.prototype.many1 = function () {
+        return RegExp.concat(this.group(), "+", RegExp.concat.UNION_FLAGS);
+    };
+
+    function id(x) {
+        return x;
+    }
+
+    /*************************************************************************************/
+
+    var eof = /(?![\S\s])/m;
+    var newline = /\r?\n/m;
+    var spaces = /[\t ]*/m;
+    var leadingSpaces = RegExp.concat(/^/m, spaces);
+    var trailingSpaces = RegExp.concat(spaces, /$/m);
+
+    var lineComment = /\/\/(?!@).*/m;
+    var blockComment = /\/\*(?!@)(?:[^*]|\*[^/])*\*\//m;
+    var comment = lineComment.or(blockComment);
+    var comments = RegExp.concat(comment, RegExp.concat(spaces, comment).many());
+    var eofComments = RegExp.concat(leadingSpaces, comments, trailingSpaces, eof);
+    var entireLineComments = RegExp.concat(leadingSpaces, comments, trailingSpaces, newline);
+
+    var lineCondComp = /\/\/@.*/;
+    var blockCondComp = /\/\*@(?:[^*]|\*[^@]|\*@[^/])*@*\*\//;
+
+    var doubleQuotedString = /"(?:[^\\"]|\\.)*"/;
+    var singleQuotedString = /'(?:[^\\']|\\.)*'/;
+
+    var regexLiteral = /\/(?![/*])(?:[^/\\[]|\\.|\[(?:[^\]\\]|\\.)*\])*\//;
+
+    var anyChar = /[\S\s]/;
+
+    /*************************************************************************************/
+
+
+    var stripper = new Lexer();
+
+    stripper.addRule(entireLineComments, Lexer.NULL_LEXEME);
+
+    stripper.addRule(
+        RegExp.concat(newline, entireLineComments.many(), eofComments)
+        , Lexer.NULL_LEXEME
+    );
+
+    stripper.addRule(
+        RegExp.concat(comment, RegExp.concat(trailingSpaces, newline, eofComments).optional())
+        , Lexer.NULL_LEXEME
+    );
+
+    stripper.addRule(lineCondComp, id);
+    stripper.addRule(blockCondComp, id);
+
+    stripper.addRule(doubleQuotedString, id);
+    stripper.addRule(singleQuotedString, id);
+
+    stripper.addRule(regexLiteral, id);
+
+    stripper.addRule(anyChar, id);
+
+    /*************************************************************************************/
+
+    return stripper.lex(toBeStrippedStr).join("");
 }
 
 var intmodulus = 274876858369;
@@ -530,18 +921,18 @@ var GlobalEnvironment = new Environment({
     false: new modules.trit._Trit("N"),
     Math: new Environment({
         PI: new modules.rat._Rat(Math.PI),
-        E: new modules.num._Num(Math.E),
+        E: new modules.rat._Rat(Math.E),
         sin: function sin(a) {
             if (!(a instanceof modules.rat._Rat)) {
                 //Cast
                 return GlobalEnvironment.lookup(type(a))(sin(GlobalEnvironment.lookup("rat")(a)));
             } else {
                 a = a.mod(GlobalEnvironment.lookup("Math").lookup("PI").mul(2)).sub(1);
-                var pow = (x, y) => (y === 0 ? new modules.rat._Rat(1,1) : x.mul(pow(x, y - 1))); //Q&D int power
+                var pow = (x, y) => (y === 0 ? new modules.rat._Rat(1, 1) : x.mul(pow(x, y - 1))); //Q&D int power
                 // console.log(pow(new modules.rat._Rat(2,1),3).decimalValue());
                 //Taylor series
                 var coefs = [0.8414709848078965, 0.5403023058681398, -0.42073549240394825, -0.09005038431135662, 0.03506129103366235, 0.004502519215567831, -0.0011687097011220786, -0.00010720283846590075, 0.000020869816091465686, 1.4889283120263993e-6, -2.3188684546072984e-7, -1.353571192751272e-8, 1.7567185262176504e-9, 8.676738415072256e-11, -9.652299594602475e-12, -4.1317801976534555e-13, 4.021791497751031e-14, 1.519036837372594e-15, -1.3143109469774612e-16, -4.441628179452029e-18, 3.45871301836174e-19, 1.0575305189171499e-20, -7.486391814635802e-22, -2.089981262682114e-23, 1.3562304012021378e-24, 3.4833021044701907e-26, -2.08650830954175e-27, -4.961968809786596e-29, 2.7599316263779767e-30, 6.110799026830784e-32, -3.172335202733306e-33];
-                var result = new modules.rat._Rat(0,1);
+                var result = new modules.rat._Rat(0, 1);
                 for (var i = 0; i < coefs.length; i++) {
                     result = result.add(pow(a, i).mul(coefs[i]));
                 }
@@ -550,14 +941,84 @@ var GlobalEnvironment = new Environment({
 
             }
         },
+        cos: function cos(a) {
+            if (!(a instanceof modules.rat._Rat)) {
+                //Cast
+                return GlobalEnvironment.lookup(type(a))(cos(GlobalEnvironment.lookup("rat")(a)));
+            } else {
+                a = a.mod(GlobalEnvironment.lookup("Math").lookup("PI").mul(2)).sub(1);
+                var pow = (x, y) => (y === 0 ? new modules.rat._Rat(1, 1) : x.mul(pow(x, y - 1))); //Q&D int power
+                // console.log(pow(new modules.rat._Rat(2,1),3).decimalValue());
+                //Taylor series
+                var coefs = [0.5403023058681398, -0.8414709848078965, -0.2701511529340699, 0.1402451641346494, 0.022512596077839158, -0.007012258206732471, -0.0007504198692613052, 0.00016695852873172549, 0.000013400354808237594, -0.0000023188684546072986, -1.4889283120263993e-7, 2.1080622314611804e-8, 1.1279759939593935e-9, -1.3513219432443465e-10, -6.197670296480184e-12, 6.43486639640165e-13, 2.5823626235334097e-14, -2.3657597045594303e-15, -8.439093540958856e-17, 6.91742603672348e-18, 2.2208140897260144e-19, -1.6470061992198763e-20, -4.806956904168863e-22, 3.2549529628851306e-23, 8.708255261175476e-25, -5.424921604808551e-26, -1.3397315786423809e-27, 7.727808553858335e-29, 1.772131717780927e-30, -9.517005608199921e-32, -2.0369330089435944e-33];
+                var result = new modules.rat._Rat(0, 1);
+                for (var i = 0; i < coefs.length; i++) {
+                    result = result.add(pow(a, i).mul(coefs[i]));
+                }
+
+                return result;
+
+            }
+        },
+        tan: function tan(a) {
+            if (!(a instanceof modules.rat._Rat)) {
+                //Cast
+                return GlobalEnvironment.lookup(type(a))(tan(GlobalEnvironment.lookup("rat")(a)));
+            } else {
+                var sin = GlobalEnvironment.lookup("Math").lookup("sin");
+                var cos = GlobalEnvironment.lookup("Math").lookup("cos")
+                return sin(a).div(cos(a));
+
+            }
+        },
+        exp: function exp(a) {
+            if (!(a instanceof modules.rat._Rat)) {
+                //Cast
+                return GlobalEnvironment.lookup(type(a))(exp(GlobalEnvironment.lookup("rat")(a)));
+            } else {
+                // a = a.mod(GlobalEnvironment.lookup("Math").lookup("PI").mul(2)).sub(1);
+                var pow = (x, y) => (y === 0 ? new modules.rat._Rat(1, 1) : x.mul(pow(x, y - 1))); //Q&D int power
+                var coefs = [1, 1, 1 / 2, 1 / 6, 1 / 24, 1 / 120, 1 / 720, 1 / 5040, 1 / 40320, 1 / 362880, 1 / 3628800, 1 / 39916800, 1 / 479001600, 1 / 6227020800, 1 / 87178291200, 1 / 1307674368000, 1 / 20922789888000, 1 / 355687428096000, 1 / 6402373705728000, 1 / 121645100408832000, 1 / 2432902008176640000, 1 / 51090942171709440000, 1 / 1124000727777607680000, 1 / 25852016738884976640000, 1 / 620448401733239439360000, 1 / 15511210043330985984000000, 1 / 403291461126605635584000000, 1 / 10888869450418352160768000000, 1 / 304888344611713860501504000000, 1 / 8841761993739701954543616000000, 1 / 265252859812191058636308480000000];
+                var result = new modules.rat._Rat(0, 1);
+                for (var i = 0; i < coefs.length; i++) {
+                    result = result.add(pow(a, i).mul(coefs[i]));
+                }
+
+                return result;
+
+            }
+        },
+        // log: function log(a) {
+        //     if (!(a instanceof modules.rat._Rat)) {
+        //         //Cast
+        //         return GlobalEnvironment.lookup(type(a))(log(GlobalEnvironment.lookup("rat")(a)));
+        //     } else {
+        //         var pow = (x, y) => (y === 0 ? new modules.rat._Rat(1, 1) : x.mul(pow(x, y - 1))); //Q&D int power
+        //         var result = a;
+        //         for (var i = 2; i < 300; i++) {
+        //             var t1 = Math.pow(-1, i + 1);
+        //             result = result.add(pow(a, i).div(i).mul(t1));
+        //         }
+
+        //         return result;
+
+        //     }
+        // },
         'abs'(op1) {
             return op1.abs();
+        },
+        'sign'(op1) {
+            if (op1.decimalValue && op1.decimalValue() === 0)
+                return op1
+            var abs = GlobalEnvironment.lookup("Math").lookup("abs");
+            return op1.div(abs(op1));
+
         },
         'random'() {
             var theRand = rand();
             var num = GlobalEnvironment.lookup("num");
-            return num(theRand).div(num(modulus));
-        },
+            return new modules.rat._Rat(theRand, modulus);
+        }
 
     }),
     '+'(op1, op2) {
@@ -636,7 +1097,7 @@ var GlobalEnvironment = new Environment({
     },
     'keys'(table) {
         if (table instanceof modules.tuple._Tuple) {
-            var result = new _Table();
+            var result = new modules.table._Table();
             for (var i = 0; i < table.toArray().length; i++) {
                 result.set(new modules.int._Int(i), new modules.int._Int(i));
             }
@@ -644,6 +1105,13 @@ var GlobalEnvironment = new Environment({
             return result;
         } else if (table instanceof Environment) {
             return toTernary(Object.getOwnPropertyNames(table.record));
+        } else if (table instanceof modules.enumType._Enum) {
+            var result = new modules.table._Table();
+            for (var i = 0; i < Object.getOwnPropertyNames(table).length; i++) {
+                result.set(new modules.int._Int(i), new modules.string._String(Object.getOwnPropertyNames(table)[i]) /*table[Object.getOwnPropertyNames(table)[i]]*/);
+            }
+
+            return result;
         } else {
             return toTernary(Object.getOwnPropertyNames(table.hashes).map((e) => JSON.parse(e)));
         }
@@ -657,6 +1125,13 @@ var GlobalEnvironment = new Environment({
             return result;
         } else if (table instanceof Environment) {
             return toTernary(Object.getOwnPropertyNames(table.record).map((e) => table.lookup(e)));
+        } else if (table instanceof modules.enumType._Enum) {
+            var result = new modules.table._Table();
+            for (var i = 0; i < Object.getOwnPropertyNames(table).length; i++) {
+                result.set(new modules.int._Int(i), table[Object.getOwnPropertyNames(table)[i]]);
+            }
+
+            return result;
         } else {
             return toTernary(Object.getOwnPropertyNames(table.hashes).map((e) => table.get(JSON.parse(e))));
         }
@@ -665,6 +1140,8 @@ var GlobalEnvironment = new Environment({
         if (JSON.stringify(args) === "[]") {
             return new modules.trit._Trit("N");
         } else if (args[0].toString() === "unknown") {
+            return new modules.trit._Trit("0");
+        } else if (args[0].toString() === "0") {
             return new modules.trit._Trit("0");
         } else {
             return (falsey(args[0]) ? new modules.trit._Trit("N") : new modules.trit._Trit("1"));
@@ -733,6 +1210,8 @@ var GlobalEnvironment = new Environment({
                     result.set(args[0].toArray()[i], args[1].toArray()[i]);
                 }
                 return result;
+            case "environment":
+                return modules.table._Table.from(args[0].record)
             default:
                 var result = new modules.table._Table()
                 for (var i = 0; i < args.length; i++) {

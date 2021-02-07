@@ -8,22 +8,29 @@ They support addition, subtraction, multiplication, division, and square root.
             (set (prop this "a") a)
             (set (prop this "b") b)
             (set (prop this "add") (lambda (that) (begin
-                (local a1 (prop this "a"))
-                (local b1 (prop this "b"))
-                (local a2 (prop that "a"))
-                (local b2 (prop that "b"))
-                (new Complex (+ a1 a2) (+ b1 b2))
+                (local _a (prop this "a"))
+                (local _b (prop this "b"))
+                (local _c (prop that "a"))
+                (local _d (prop that "b"))
+                (new Complex (+ _a _c) (+ _b _d))
             )))
             (set (prop this "sub") (lambda (that) (begin
-                (local a1 (prop this "a"))
-                (local b1 (prop this "b"))
-                (local a2 (prop that "a"))
-                (local b2 (prop that "b"))
-                (new Complex (+ a1 a2) (+ b1 b2))
+                (local _a (prop this "a"))
+                (local _b (prop this "b"))
+                (local _c (prop that "a"))
+                (local _d (prop that "b"))
+                (new Complex (- _a _c) (- _b _d))
+            )))
+            (set (prop this "mul") (lambda (that) (begin
+                (local _a (prop this "a"))
+                (local _b (prop this "b"))
+                (local _c (prop that "a"))
+                (local _d (prop that "b"))
+                (new Complex (- (* _a _c) (* _b _d)) (+ (* _a _d) (* _b _c)))
             )))
         ))
         
-        (def toString(x) (begin
+        (def toString (x) (begin
             (local result "")
             (set result (+ result (string (prop x "a"))))
             (set result (+ result "+"))
@@ -35,6 +42,6 @@ They support addition, subtraction, multiplication, division, and square root.
 
 
     (local x (new Complex 0.0 1.0))
-    (local y (new Complex 1.0 1.0))
-    (print ((prop Math "sin") 1.0))
+    (local y (new Complex 0.0 1.0))
+    (print (trit -1))
 )
